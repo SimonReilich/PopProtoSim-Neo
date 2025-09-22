@@ -12,5 +12,5 @@ main =
 chooseProtocol :: Char -> IO ()
 chooseProtocol p =
     case p of
-        'c' -> print (Simulator.run (Protocols.Cut.get [3]))
+        'c' -> putStrLn "" >> Simulator.run (Protocols.Cut.get [] [5])
         _   -> putStrLn "no such protocol"

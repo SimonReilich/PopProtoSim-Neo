@@ -1,52 +1,48 @@
 module Simulator where
 
-import Config
+import Util
 import System.Random
 
-run :: Config.Input a -> Int
-run (states, delta, output) = 
-    if stable (states, delta, output)
-        then output (head states)
-    else let
-        a1 = selectAgent (-1) (size states)
-    in let
-        a2 = selectAgent a1 (size states)
-    in let
-        (q1, q2) = delta (states!!a1) (states!!a2)
-    in run (repl a1 q1 (repl a2 q2 states), delta, output)
+run :: (Eq a) => Util.Input a -> IO ()
+run (states, delta, stringify, output) = 
+    let 
+        helper (states, delta, stringify, output) gen = 
+            if isStable (states, delta, stringify, output)
+                then putStrLn "" >> putStrLn ("Output: " ++ (show (output (head states))))
+            else let
+                (a1, a2, genNew) = selectAgents (states, delta, stringify, output) gen
+            in let
+                (q1, q2) = delta (states!!a1) (states!!a2)
+            in let 
+                newConfig = Util.repl a1 q1 (Util.repl a2 q2 states)
+            in putStrLn (printConfig newConfig a1 a2 stringify) >> helper (newConfig, delta, stringify, output) genNew
+    in helper (states, delta, stringify, output) (mkStdGen (Util.hash (states, delta, stringify, output)))
 
-stable :: Config.Input a -> Bool
-stable (states, delta, output) =
-    size (filter (\a -> output a == 3) states) == size states
+isStable :: Util.Input a -> Bool
+isStable (states, delta, stringify, output) =
+    length (filter (\a -> output a == 5) states) == length states
 
-size :: [a] -> Int
-size [] =
-    0
-size (_:xs) =
-    1 + size xs
-
-repl :: Int -> a -> [a] -> [a]
-repl _ _ [] =
-    []
-repl i e (x:xs) =
-    if i <= 0
-        then e:xs
-        else x:repl (i - 1) e xs
-
-generator :: StdGen
-generator = mkStdGen 42
-
-selectAgent :: Int -> Int -> Int
-selectAgent i n = 
+selectAgents :: (Eq a) => Util.Input a -> StdGen -> (Int, Int, StdGen)
+selectAgents (states, delta, stringify, output) gen = 
     let 
         rnd :: StdGen -> (Int, StdGen)
-        rnd = uniformR (0, n - 1)
+        rnd = uniformR (0, (length states) - 1)
     in let 
-        result g = 
+        result gen = 
             let 
-                (res, gNew) = rnd g
-            in if res == i
-                then result gNew
-                else res
-    in result generator
+                (a1, genNew1) = rnd gen
+            in let
+                (a2, genNew2) = rnd genNew1
+            in let
+                (q1, q2) = delta (states!!a1) (states!!a2)
+            in if a1 == a2 || (q1 == states!!a1 && q2 == states!!a2) || (q1 == states!!a2 && q2 == states!!a1)
+                then result genNew2
+                else (a1, a2, genNew2)
+    in result gen
 
+printConfig :: Util.Configuration a -> Int -> Int -> (a -> String) -> String
+printConfig [] a1 a2 stringify = " |"
+printConfig (s:states) a1 a2 stringify =
+    if a1 == 0 || a2 == 0
+        then "| *" ++ (stringify s) ++ "* " ++ (printConfig states (a1 - 1) (a2 - 1) stringify)
+        else "|  " ++ (stringify s) ++ "  " ++ (printConfig states (a1 - 1) (a2 - 1) stringify)
