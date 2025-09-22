@@ -6,7 +6,7 @@ input :: [Int] -> [Int] -> Util.Configuration (Int, Int)
 input _ (x0 : _) = 
     if x0 <= 0 
         then []
-        else (1, 1) : input [x0 - 1]
+        else (1, 1) : input [] [x0 - 1]
 input _ [] = []
 
 delta :: (Int, Int) -> (Int, Int) -> ((Int, Int), (Int, Int))
