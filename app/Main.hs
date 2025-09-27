@@ -21,17 +21,28 @@ chooseProtocol p =
 run :: (Eq a) => Protocols.Input a -> IO ()
 run (c, d, s, o) =
     let
-        helper (states, delta, stringify, output) gen =
-            if isStable (states, delta, stringify, output)
-                then putStrLn "" >> putStrLn ("Output: " ++ show (output (head states)))
+        helper states gen =
+            if isStable (states, d, s, o)
+                then putStrLn (printConfig states (-1) (-1) s) >> 
+                    putStrLn "" >> 
+                    putStrLn ("Output: " ++ show (o (head states)))
             else let
-                (a1, a2, genNew) = selectAgents (states, delta, stringify, output) gen
-            in let
-                (q1, q2) = delta (states!!a1) (states!!a2)
-            in let
-                newConfig = repl a1 q1 (repl a2 q2 states)
-            in putStrLn (printConfig newConfig a1 a2 stringify) >> helper (newConfig, delta, stringify, output) genNew
-    in helper (c, d, s, o) (mkStdGen (hash (c, d, s, o)))
+                (a1, a2, newStates, genNew) = step (states, d, s, o) gen
+            in putStrLn (printConfig states (-1) (-1) s) >> 
+                putStrLn (printConfig states a1 a2 s) >>
+                putStrLn (printConfig newStates a1 a2 s) >>
+                helper newStates genNew
+    in helper c (mkStdGen (hash (c, d, s, o)))
+
+step :: (Eq a) => Protocols.Input a -> StdGen -> (Int, Int, Protocols.Configuration a, StdGen)
+step (states, delta, stringify, output) gen =
+    let
+        (a1, a2, genNew) = selectAgents (states, delta, stringify, output) gen
+    in let
+        (q1, q2) = delta (states!!a1) (states!!a2)
+    in let
+        newStates = repl a1 q1 (repl a2 q2 states)
+    in (a1, a2, newStates, genNew)
 
 isStable :: Protocols.Input a -> Bool
 isStable (states, delta, _, output) =
