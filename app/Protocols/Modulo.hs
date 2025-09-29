@@ -1,10 +1,10 @@
-module Protocols.Cut where
+module Protocols.Modulo where
 
 import Protocols
 
-get :: Int -> Protocols.Input (Int, Int)
-get x0 =
-  let input :: Int -> Protocols.Configuration (Int, Int)
+get :: Int -> Int -> Protocols.Input (Int, [Int], Int)
+get m x0 =
+  let input :: Int -> Protocols.Configuration (Int, [Int], Int)
       input x0 =
         if x0 <= 0
           then []

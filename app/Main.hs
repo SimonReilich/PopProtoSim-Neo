@@ -19,7 +19,7 @@ chooseProtocol p =
   case head p of
     "c" -> do
       putStrLn ("\nx0 = " ++ (p !! 1) ++ "\n")
-      run (Protocols.Cut.get (p !! 1))
+      run (Protocols.Cut.get (read (p !! 1)))
     _ -> putStrLn "no such protocol"
 
 run :: (Eq a) => Protocols.Input a -> IO ()

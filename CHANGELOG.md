@@ -1,4 +1,4 @@
-# Revision history for PopProtoSim-Neo
+# Revision history for proto-sim
 
 ## 0.1.0.0 -- YYYY-mm-dd
 
