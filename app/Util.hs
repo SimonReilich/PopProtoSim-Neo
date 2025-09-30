@@ -11,7 +11,7 @@ printConfig (s : states) a1 a2 stringify =
     then "| *" ++ stringify s ++ "* " ++ printConfig states (a1 - 1) (a2 - 1) stringify
     else "|  " ++ stringify s ++ "  " ++ printConfig states (a1 - 1) (a2 - 1) stringify
 
-hash :: Input a -> Int
+hash :: Protocol a -> Int
 hash (c, _, _, o) =
   let helper [] _ _ = 0
       helper (s : states) output n =

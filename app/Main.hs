@@ -3,6 +3,7 @@ module Main where
 import Data.List
 import Data.List.Duplicate
 import Data.Maybe
+import Parsing
 import Protocols
 import Protocols.Cut
 import Protocols.Modulo
@@ -13,21 +14,24 @@ import Util
 main :: IO ()
 main = do
   args <- getArgs
-  chooseProtocol args
+  run (parse args)
 
-chooseProtocol :: [String] -> IO ()
-chooseProtocol p =
-  case p of
-    "c" : _ -> do
-      putStrLn ("\nx0 = " ++ (p !! 1) ++ "\n")
-      run (Protocols.Cut.get (read (p !! 1)))
-    "m" : _ -> do
-      putStrLn ("\nm = " ++ (p !! 1) ++ "; x0 = " ++ (p !! 2) ++ "\n")
-      run (Protocols.Modulo.get (read (p !! 1)) (read (p !! 2)))
-    _ -> putStrLn "no such protocol"
+run :: Parsing.Input -> IO ()
+run input =
+  case input of
+    Message str -> putStrLn str
+    Input p a x ->
+      case p of
+        "c" -> do
+          putStrLn ("\nx0 = " ++ show (head x) ++ "\n")
+          simulate (Protocols.Cut.get (head x))
+        "m" -> do
+          putStrLn ("\na0 = " ++ show (head a) ++ "; x0 = " ++ show (head x) ++ "\n")
+          simulate (Protocols.Modulo.get (head a) (head x))
+        _ -> putStrLn "no such protocol"
 
-run :: (Eq a) => Protocols.Input a -> IO ()
-run (c, d, s, o) =
+simulate :: (Eq a) => Protocols.Protocol a -> IO ()
+simulate (c, d, s, o) =
   let helper states gen =
         if isStable (states, d, s, o)
           then
@@ -47,14 +51,14 @@ run (c, d, s, o) =
                   >> helper newStates genNew
    in helper c (mkStdGen (hash (c, d, s, o)))
 
-step :: (Eq a) => Protocols.Input a -> StdGen -> (Int, Int, Protocols.Configuration a, StdGen)
+step :: (Eq a) => Protocols.Protocol a -> StdGen -> (Int, Int, Protocols.Configuration a, StdGen)
 step (states, delta, stringify, output) gen =
   let (a1, a2, genNew) = selectAgents (states, delta, stringify, output) gen
    in let (q1, q2) = delta (states !! a1) (states !! a2)
        in let newStates = replace a1 q1 (replace a2 q2 states)
            in (a1, a2, newStates, genNew)
 
-isStable :: (Eq a) => Protocols.Input a -> Bool
+isStable :: (Eq a) => Protocols.Protocol a -> Bool
 isStable (c, d, s, o) =
   let getAllConf (states, delta, stringify, output) =
         case states of
@@ -83,7 +87,7 @@ isStable (c, d, s, o) =
                       Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found)
        in helper [c] []
 
-selectAgents :: (Eq a) => Protocols.Input a -> StdGen -> (Int, Int, StdGen)
+selectAgents :: (Eq a) => Protocols.Protocol a -> StdGen -> (Int, Int, StdGen)
 selectAgents (states, delta, _, _) g =
   let rnd :: StdGen -> (Int, StdGen)
       rnd = uniformR (0, length states - 1)
