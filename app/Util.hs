@@ -1,6 +1,8 @@
 module Util where
 
 import Protocols
+import Data.List (group, maximumBy)
+import qualified Data.Ord
 
 printConfig :: Protocols.Configuration a -> Int -> Int -> (a -> String) -> String
 printConfig [] _ _ _ = " |"
@@ -23,3 +25,15 @@ replace i e (x : xs) =
   if i <= 0
     then e : xs
     else x : replace (i - 1) e xs
+
+intArrayToString :: [Int] -> String
+intArrayToString list =
+  let 
+    helper [] = "]"
+    helper [x] = show x ++ "]"
+    helper (x : xs) = show x ++ "; " ++ helper xs
+  in "[" ++ helper list
+
+mostCommon :: (Eq a) => [a] -> a
+mostCommon list =
+  head (Data.List.maximumBy (Data.Ord.comparing length) (Data.List.group list))

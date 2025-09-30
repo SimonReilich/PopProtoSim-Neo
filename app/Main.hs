@@ -5,6 +5,7 @@ import Data.List.Duplicate
 import Data.Maybe
 import Protocols
 import Protocols.Cut
+import Protocols.Modulo
 import System.Environment
 import System.Random
 import Util
@@ -16,10 +17,13 @@ main = do
 
 chooseProtocol :: [String] -> IO ()
 chooseProtocol p =
-  case head p of
-    "c" -> do
+  case p of
+    "c" : _ -> do
       putStrLn ("\nx0 = " ++ (p !! 1) ++ "\n")
       run (Protocols.Cut.get (read (p !! 1)))
+    "m" : _ -> do
+      putStrLn ("\nm = " ++ (p !! 1) ++ "; x0 = " ++ (p !! 2) ++ "\n")
+      run (Protocols.Modulo.get (read (p !! 1)) (read (p !! 2)))
     _ -> putStrLn "no such protocol"
 
 run :: (Eq a) => Protocols.Input a -> IO ()
@@ -27,9 +31,14 @@ run (c, d, s, o) =
   let helper states gen =
         if isStable (states, d, s, o)
           then
-            putStrLn (printConfig states (-1) (-1) s)
-              >> putStrLn ""
-              >> putStrLn ("Output: " ++ show (o (head states)))
+            let output =
+                  ( case states of
+                      first : _ -> o first
+                      _ -> 0
+                  )
+             in putStrLn (printConfig states (-1) (-1) s)
+                  >> putStrLn ""
+                  >> putStrLn ("Output: " ++ show output)
           else
             let (a1, a2, newStates, genNew) = step (states, d, s, o) gen
              in putStrLn (printConfig states (-1) (-1) s)
@@ -53,20 +62,25 @@ isStable (c, d, s, o) =
           x : xs ->
             Data.Maybe.mapMaybe
               ( \i ->
-                  let (xn, q) = delta x (tail states !! i)
-                   in if (xn == x && q == tail states !! i) || (q == x && xn == tail states !! i)
+                  let (xn, q) = delta x (xs !! i)
+                   in if (xn == x && q == xs !! i) || (q == x && xn == xs !! i)
                         then Nothing
-                        else Just (xn : replace i q (tail states))
+                        else Just (xn : replace i q xs)
               )
-              (deleteDups (Data.Maybe.mapMaybe (`elemIndex` tail states) (tail states)))
+              (deleteDups (Data.Maybe.mapMaybe (`elemIndex` xs) xs))
               ++ Data.List.map (x :) (getAllConf (xs, delta, stringify, output))
    in let helper [] _ =
             True
           helper (current : queue) found =
             let successors = getAllConf (current, d, s, o)
-             in case find (any (\state -> o (head c) /= o state)) successors of
-                  Just _ -> False
-                  Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found)
+             in let output =
+                      ( case c of
+                          first : _ -> o first
+                          _ -> 0
+                      )
+                 in case find (any (\state -> output /= o state)) successors of
+                      Just _ -> False
+                      Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found)
        in helper [c] []
 
 selectAgents :: (Eq a) => Protocols.Input a -> StdGen -> (Int, Int, StdGen)

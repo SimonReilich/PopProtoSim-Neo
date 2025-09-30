@@ -5,10 +5,10 @@ import Protocols
 get :: Int -> Protocols.Input (Int, Int)
 get x0 =
   let input :: Int -> Protocols.Configuration (Int, Int)
-      input x0 =
-        if x0 <= 0
+      input x =
+        if x <= 0
           then []
-          else (1, 1) : input (x0 - 1)
+          else (1, 1) : input (x - 1)
    in let delta :: (Int, Int) -> (Int, Int) -> ((Int, Int), (Int, Int))
           delta (l1, h1) (l2, h2) =
             if l1 == l2
