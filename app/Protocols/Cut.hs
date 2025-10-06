@@ -6,7 +6,7 @@ input :: Int -> Protocols.Configuration (Int, Int)
 input x =
   if x <= 0
     then []
-    else (1, 1) : input (x - 1)
+    else (True, (1, 1)) : input (x - 1)
 
 delta :: (Int, Int) -> (Int, Int) -> ((Int, Int), (Int, Int))
 delta (l1, h1) (l2, h2) =

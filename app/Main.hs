@@ -37,7 +37,7 @@ simulate (c, d, s, o) =
           then
             let output =
                   ( case states of
-                      first : _ -> o first
+                      (b, first) : _ -> o first
                       _ -> 0
                   )
              in putStrLn (printConfig states (-1) (-1) s)
@@ -54,7 +54,7 @@ simulate (c, d, s, o) =
 step :: (Eq a) => Protocols.Protocol a -> StdGen -> (Int, Int, Protocols.Configuration a, StdGen)
 step (states, delta, stringify, output) gen =
   let (a1, a2, genNew) = selectAgents (states, delta, stringify, output) gen
-   in let (q1, q2) = delta (states !! a1) (states !! a2)
+   in let (q1, q2) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
        in let newStates = replace a1 q1 (replace a2 q2 states)
            in (a1, a2, newStates, genNew)
 
@@ -73,19 +73,16 @@ isStable (c, d, s, o) =
               )
               (deleteDups (Data.Maybe.mapMaybe (`elemIndex` xs) xs))
               ++ Data.List.map (x :) (getAllConf (xs, delta, stringify, output))
-   in let helper [] _ =
+   in let helper [] _ output =
             True
-          helper (current : queue) found =
+          helper (current : queue) found output =
             let successors = getAllConf (current, d, s, o)
-             in let output =
-                      ( case c of
-                          first : _ -> o first
-                          _ -> 0
-                      )
-                 in case find (any (\state -> output /= o state)) successors of
+             in case find (any (\state -> output /= o state)) successors of
                       Just _ -> False
-                      Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found)
-       in helper [c] []
+                      Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found) output
+       in case getOutput (c, d, s, o) of
+        Just r -> helper [Data.Maybe.mapMaybe (\(b, s) -> if b then Just s else Nothing) c] [] r
+        Nothing -> False
 
 selectAgents :: (Eq a) => Protocols.Protocol a -> StdGen -> (Int, Int, StdGen)
 selectAgents (states, delta, _, _) g =
@@ -94,8 +91,18 @@ selectAgents (states, delta, _, _) g =
    in let result gen =
             let (a1, genNew1) = rnd gen
              in let (a2, genNew2) = rnd genNew1
-                 in let (q1, q2) = delta (states !! a1) (states !! a2)
-                     in if a1 == a2 || (q1 == states !! a1 && q2 == states !! a2) || (q1 == states !! a2 && q2 == states !! a1)
+                 in let ((b1, q1), (b2, q2)) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
+                 in if b1 && b2 then
+                     if a1 == a2 || ((b1, q1) == states !! a1 && (b2, q2) == states !! a2) || ((b1, q1) == states !! a2 && (b2, q2) == states !! a1)
                           then result genNew2
                           else (a1, a2, genNew2)
+                  else result genNew2
        in result g
+
+getOutput :: Protocols.Protocol a -> Maybe Int
+getOutput (c, _, _, o) =
+  let
+    outputs = Data.List.map head (Data.List.group (Data.Maybe.mapMaybe (\(b, s) -> if b then Just (o s) else Nothing) c))
+  in case outputs of
+    [r] -> Just r
+    _ -> Nothing
