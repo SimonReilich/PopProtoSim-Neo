@@ -37,5 +37,5 @@ output m (_, s, h) =
     then h `mod` m
     else mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res)
 
-get :: Int -> Int -> Protocols.Protocol (Int, [Int], Int)
-get m x0 = (input m x0, delta m, stringify, output m)
+get :: Int -> Int -> Sniper (Int, [Int], Int) a -> Protocols.Protocol (Int, [Int], Int) a
+get m x0 sn = (input m x0, delta m, stringify, output m, sn)

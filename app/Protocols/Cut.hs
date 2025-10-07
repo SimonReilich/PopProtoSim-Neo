@@ -21,5 +21,5 @@ stringify (l, h) =
 output :: (Int, Int) -> Int
 output (_, h) = h
 
-get :: Int -> Protocols.Protocol (Int, Int)
-get x0 = (input x0, delta, stringify, output)
+get :: Int -> Sniper (Int, Int) a -> Protocols.Protocol (Int, Int) a
+get x0 sn = (input x0, delta, stringify, output, sn)

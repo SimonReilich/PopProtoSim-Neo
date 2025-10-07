@@ -20,47 +20,52 @@ run :: Parsing.Input -> IO ()
 run input =
   case input of
     Message str -> putStrLn str
-    Input p a x ->
-      case p of
-        "c" -> do
+    Input p a x s c ->
+      case (p, s) of
+        ("c", "n") -> do
           putStrLn ("\nx0 = " ++ show (head x) ++ "\n")
-          simulate (Protocols.Cut.get (head x))
-        "m" -> do
+          simulate (Protocols.Cut.get (head x) Protocols.noSniper)
+        ("c", "r") -> do
+          putStrLn ("\nx0 = " ++ show (head x) ++ "\n")
+          simulate (Protocols.Cut.get (head x) (Protocols.randomSniper (head c)))
+        ("m", "n") -> do
           putStrLn ("\na0 = " ++ show (head a) ++ "; x0 = " ++ show (head x) ++ "\n")
-          simulate (Protocols.Modulo.get (head a) (head x))
+          simulate (Protocols.Modulo.get (head a) (head x) Protocols.noSniper)
+        ("m", "r") -> do
+          putStrLn ("\na0 = " ++ show (head a) ++ "; x0 = " ++ show (head x) ++ "\n")
+          simulate (Protocols.Modulo.get (head a) (head x) (Protocols.randomSniper (head c)))
         _ -> putStrLn "no such protocol"
 
-simulate :: (Eq a) => Protocols.Protocol a -> IO ()
-simulate (c, d, s, o) =
-  let helper states gen =
-        if isStable (states, d, s, o)
+simulate :: (Eq a) => Protocols.Protocol a b -> IO ()
+simulate (c, d, s, o, sn) =
+  let helper states sniper gen =
+        if isStable (states, d, s, o, sniper)
           then
-            let output =
-                  ( case states of
-                      (b, first) : _ -> o first
-                      _ -> 0
-                  )
+            let Just output = getOutput (states, d, s, o, sniper)
              in putStrLn (printConfig states (-1) (-1) s)
                   >> putStrLn ""
                   >> putStrLn ("Output: " ++ show output)
           else
-            let (a1, a2, newStates, genNew) = step (states, d, s, o) gen
+            let (a1, a2, newStates, sniperNew, genNew) = step (states, d, s, o, sniper) gen
              in putStrLn (printConfig states (-1) (-1) s)
                   >> putStrLn (printConfig states a1 a2 s)
                   >> putStrLn (printConfig newStates a1 a2 s)
-                  >> helper newStates genNew
-   in helper c (mkStdGen (hash (c, d, s, o)))
+                  >> helper newStates sniperNew genNew
+   in helper c sn (mkStdGen 0)
 
-step :: (Eq a) => Protocols.Protocol a -> StdGen -> (Int, Int, Protocols.Configuration a, StdGen)
-step (states, delta, stringify, output) gen =
-  let (a1, a2, genNew) = selectAgents (states, delta, stringify, output) gen
+step :: (Eq a) => Protocols.Protocol a b -> StdGen -> (Int, Int, Protocols.Configuration a, Protocols.Sniper a b, StdGen)
+step (states, delta, stringify, output, (sniperState, sniping)) gen =
+  let (a1, a2, genNew) = selectAgents (states, delta, stringify, output, (sniperState, sniping)) gen
    in let (q1, q2) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
-       in let newStates = replace a1 q1 (replace a2 q2 states)
-           in (a1, a2, newStates, genNew)
+    in let newStates = replace a1 q1 (replace a2 q2 states)
+      in let (newSniperState, killed) = sniping newStates sniperState
+        in case killed of
+          Just i -> (a1, a2, replace i (False, let (_, s) = newStates !! i in s) newStates, (newSniperState, sniping), genNew)
+          Nothing -> (a1, a2, newStates, (newSniperState, sniping), genNew)
 
-isStable :: (Eq a) => Protocols.Protocol a -> Bool
-isStable (c, d, s, o) =
-  let getAllConf (states, delta, stringify, output) =
+isStable :: (Eq a) => Protocols.Protocol a b -> Bool
+isStable (c, d, s, o, sn) =
+  let getAllConf (states, delta, stringify, output, sniper) =
         case states of
           [] -> []
           x : xs ->
@@ -72,37 +77,37 @@ isStable (c, d, s, o) =
                         else Just (xn : replace i q xs)
               )
               (deleteDups (Data.Maybe.mapMaybe (`elemIndex` xs) xs))
-              ++ Data.List.map (x :) (getAllConf (xs, delta, stringify, output))
+              ++ Data.List.map (x :) (getAllConf (xs, delta, stringify, output, sniper))
    in let helper [] _ output =
             True
           helper (current : queue) found output =
-            let successors = getAllConf (current, d, s, o)
+            let successors = getAllConf (current, d, s, o, sn)
              in case find (any (\state -> output /= o state)) successors of
-                      Just _ -> False
-                      Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found) output
-       in case getOutput (c, d, s, o) of
-        Just r -> helper [Data.Maybe.mapMaybe (\(b, s) -> if b then Just s else Nothing) c] [] r
-        Nothing -> False
+                  Just _ -> False
+                  Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found) output
+       in case getOutput (c, d, s, o, sn) of
+            Just r -> helper [Data.Maybe.mapMaybe (\(b, s) -> if b then Just s else Nothing) c] [] r
+            Nothing -> False
 
-selectAgents :: (Eq a) => Protocols.Protocol a -> StdGen -> (Int, Int, StdGen)
-selectAgents (states, delta, _, _) g =
+selectAgents :: (Eq a) => Protocols.Protocol a b -> StdGen -> (Int, Int, StdGen)
+selectAgents (states, delta, _, _, _) g =
   let rnd :: StdGen -> (Int, StdGen)
       rnd = uniformR (0, length states - 1)
    in let result gen =
             let (a1, genNew1) = rnd gen
              in let (a2, genNew2) = rnd genNew1
                  in let ((b1, q1), (b2, q2)) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
-                 in if b1 && b2 then
-                     if a1 == a2 || ((b1, q1) == states !! a1 && (b2, q2) == states !! a2) || ((b1, q1) == states !! a2 && (b2, q2) == states !! a1)
-                          then result genNew2
-                          else (a1, a2, genNew2)
-                  else result genNew2
+                     in if b1 && b2
+                          then
+                            if a1 == a2 || ((b1, q1) == states !! a1 && (b2, q2) == states !! a2) || ((b1, q1) == states !! a2 && (b2, q2) == states !! a1)
+                              then result genNew2
+                              else (a1, a2, genNew2)
+                          else result genNew2
        in result g
 
-getOutput :: Protocols.Protocol a -> Maybe Int
-getOutput (c, _, _, o) =
-  let
-    outputs = Data.List.map head (Data.List.group (Data.Maybe.mapMaybe (\(b, s) -> if b then Just (o s) else Nothing) c))
-  in case outputs of
-    [r] -> Just r
-    _ -> Nothing
+getOutput :: Protocols.Protocol a b -> Maybe Int
+getOutput (c, _, _, o, _) =
+  let outputs = Data.List.map head (Data.List.group (Data.Maybe.mapMaybe (\(b, s) -> if b then Just (o s) else Nothing) c))
+   in case outputs of
+        [r] -> Just r
+        _ -> Nothing

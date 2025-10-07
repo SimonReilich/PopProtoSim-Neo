@@ -1,22 +1,15 @@
 module Util where
 
+import Data.List
+import Data.Ord
 import Protocols
-import Data.List (group, maximumBy)
-import qualified Data.Ord
 
 printConfig :: Protocols.Configuration a -> Int -> Int -> (a -> String) -> String
 printConfig [] _ _ _ = " |"
-printConfig ((_, s) : states) a1 a2 stringify =
-  if a1 == 0 || a2 == 0
-    then "| *" ++ stringify s ++ "* " ++ printConfig states (a1 - 1) (a2 - 1) stringify
-    else "|  " ++ stringify s ++ "  " ++ printConfig states (a1 - 1) (a2 - 1) stringify
-
-hash :: Protocol a -> Int
-hash (c, _, _, o) =
-  let helper [] _ _ = 0
-      helper ((_, s) : states) output n =
-        output s ^ n + helper states output (n + 1)
-   in helper c o (1 :: Integer)
+printConfig ((b, s) : states) a1 a2 stringify
+  | not b =              "| -" ++ stringify s ++ "- " ++ printConfig states (a1 - 1) (a2 - 1) stringify
+  | a1 == 0 || a2 == 0 = "| *" ++ stringify s ++ "* " ++ printConfig states (a1 - 1) (a2 - 1) stringify
+  | otherwise =          "|  " ++ stringify s ++ "  " ++ printConfig states (a1 - 1) (a2 - 1) stringify
 
 replace :: Int -> a -> [a] -> [a]
 replace _ _ [] =
@@ -28,11 +21,10 @@ replace i e (x : xs) =
 
 intArrayToString :: [Int] -> String
 intArrayToString list =
-  let 
-    helper [] = "]"
-    helper [x] = show x ++ "]"
-    helper (x : xs) = show x ++ "; " ++ helper xs
-  in "[" ++ helper list
+  let helper [] = "]"
+      helper [x] = show x ++ "]"
+      helper (x : xs) = show x ++ "; " ++ helper xs
+   in "[" ++ helper list
 
 mostCommon :: (Eq a) => [a] -> a
 mostCommon list =
