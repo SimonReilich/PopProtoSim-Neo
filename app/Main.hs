@@ -46,22 +46,22 @@ simulate (c, d, s, o, sn) =
                   >> putStrLn ""
                   >> putStrLn ("Output: " ++ show output)
           else
-            let (a1, a2, newStates, sniperNew, genNew) = step (states, d, s, o, sniper) gen
+            let (a1, a2, newStates, newSniper, newGen) = step (states, d, s, o, sniper) gen
              in putStrLn (printConfig states (-1) (-1) s)
                   >> putStrLn (printConfig states a1 a2 s)
                   >> putStrLn (printConfig newStates a1 a2 s)
-                  >> helper newStates sniperNew genNew
+                  >> helper newStates newSniper newGen
    in helper c sn (mkStdGen 0)
 
 step :: (Eq a) => Protocols.Protocol a b -> StdGen -> (Int, Int, Protocols.Configuration a, Protocols.Sniper a b, StdGen)
 step (states, delta, stringify, output, (sniperState, sniping)) gen =
-  let (a1, a2, genNew) = selectAgents (states, delta, stringify, output, (sniperState, sniping)) gen
+  let (a1, a2, newGen) = selectAgents (states, delta, stringify, output, (sniperState, sniping)) gen
    in let (q1, q2) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
-    in let newStates = replace a1 q1 (replace a2 q2 states)
-      in let (newSniperState, killed) = sniping newStates sniperState
-        in case killed of
-          Just i -> (a1, a2, replace i (False, let (_, s) = newStates !! i in s) newStates, (newSniperState, sniping), genNew)
-          Nothing -> (a1, a2, newStates, (newSniperState, sniping), genNew)
+       in let newStates = replace a1 q1 (replace a2 q2 states)
+           in let (newSniperState, killed) = sniping newStates sniperState
+               in case killed of
+                    Just i -> (a1, a2, replace i (False, let (_, s) = newStates !! i in s) newStates, (newSniperState, sniping), newGen)
+                    Nothing -> (a1, a2, newStates, (newSniperState, sniping), newGen)
 
 isStable :: (Eq a) => Protocols.Protocol a b -> Bool
 isStable (c, d, s, o, sn) =
@@ -78,7 +78,7 @@ isStable (c, d, s, o, sn) =
               )
               (deleteDups (Data.Maybe.mapMaybe (`elemIndex` xs) xs))
               ++ Data.List.map (x :) (getAllConf (xs, delta, stringify, output, sniper))
-   in let helper [] _ output =
+   in let helper [] _ _ =
             True
           helper (current : queue) found output =
             let successors = getAllConf (current, d, s, o, sn)
@@ -91,19 +91,17 @@ isStable (c, d, s, o, sn) =
 
 selectAgents :: (Eq a) => Protocols.Protocol a b -> StdGen -> (Int, Int, StdGen)
 selectAgents (states, delta, _, _, _) g =
-  let rnd :: StdGen -> (Int, StdGen)
-      rnd = uniformR (0, length states - 1)
-   in let result gen =
-            let (a1, genNew1) = rnd gen
-             in let (a2, genNew2) = rnd genNew1
-                 in let ((b1, q1), (b2, q2)) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
-                     in if b1 && b2
-                          then
-                            if a1 == a2 || ((b1, q1) == states !! a1 && (b2, q2) == states !! a2) || ((b1, q1) == states !! a2 && (b2, q2) == states !! a1)
-                              then result genNew2
-                              else (a1, a2, genNew2)
-                          else result genNew2
-       in result g
+  let result gen =
+        let (a1, newGen1) = randomR (0, length states - 1) gen
+         in let (a2, newGen2) = randomR (0, length states - 1) newGen1
+             in let ((b1, q1), (b2, q2)) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
+                 in if b1 && b2
+                      then
+                        if a1 == a2 || ((b1, q1) == states !! a1 && (b2, q2) == states !! a2) || ((b1, q1) == states !! a2 && (b2, q2) == states !! a1)
+                          then result newGen2
+                          else (a1, a2, newGen2)
+                      else result newGen2
+   in result g
 
 getOutput :: Protocols.Protocol a b -> Maybe Int
 getOutput (c, _, _, o, _) =

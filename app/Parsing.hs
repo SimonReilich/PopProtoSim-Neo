@@ -18,8 +18,8 @@ help =
 
 parse :: [String] -> Input
 parse [] = Message "please have a look at the usage of the command: proto-sim --help"
-parse (s : rest) =
-  case s of
+parse (first : rest) =
+  case first of
     "--help" -> Message help
     "-h" -> Message help
     "cut" ->
