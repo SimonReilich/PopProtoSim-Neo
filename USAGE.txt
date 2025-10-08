@@ -1,0 +1,7 @@
+Usage:
+  proto-sim cut <x0> [--sniper=<rt>]
+  proto-sim mod <x0> <m> [--sniper=<rt>]
+  proto-sim cmb <x0> <m> [--sniper=<rt>]
+
+Options:
+  -s=<rate>, --sniper=<rt>    Enables the random sniper with rt as the rate [default: 0.1].

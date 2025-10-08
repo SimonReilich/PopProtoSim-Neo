@@ -2,11 +2,8 @@ module Protocols.Cut where
 
 import Protocols
 
-input :: Int -> Protocols.Configuration (Int, Int)
-input x =
-  if x <= 0
-    then []
-    else (True, (1, 1)) : input (x - 1)
+input :: Int -> (Int, Int)
+input _ = (1, 1)
 
 delta :: (Int, Int) -> (Int, Int) -> ((Int, Int), (Int, Int))
 delta (l1, h1) (l2, h2) =
@@ -21,5 +18,5 @@ stringify (l, h) =
 output :: (Int, Int) -> String
 output (_, h) = show h
 
-get :: Int -> Sniper (Int, Int) a -> Protocols.Protocol (Int, Int) a
-get x0 sn = (input x0, delta, stringify, output, sn)
+get :: Protocols.Protocol (Int, Int)
+get = (input, delta, stringify, output)

@@ -4,11 +4,8 @@ import Data.List
 import Protocols
 import Util
 
-input :: Int -> Int -> Protocols.Configuration (Int, [Int], Int)
-input m x =
-  if x <= 0
-    then []
-    else (True, (0, 1 : replicate (2 * m) 0, 1)) : input m (x - 1)
+input :: Int -> Int -> (Int, [Int], Int)
+input m _ = (0, 1 : replicate (2 * m) 0, 1)
 
 delta :: Int -> (Int, [Int], Int) -> (Int, [Int], Int) -> ((Int, [Int], Int), (Int, [Int], Int))
 delta m (l1, s1, h1) (l2, s2, h2)
@@ -37,5 +34,5 @@ output m (_, s, h) =
     then show (h `mod` m)
     else show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res))
 
-get :: Int -> Int -> Sniper (Int, [Int], Int) a -> Protocols.Protocol (Int, [Int], Int) a
-get m x0 sn = (input m x0, delta m, stringify, output m, sn)
+get :: Int -> Protocols.Protocol (Int, [Int], Int)
+get m = (input m, delta m, stringify, output m)
