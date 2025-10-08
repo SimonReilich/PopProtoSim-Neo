@@ -34,4 +34,10 @@ parse (first : rest) =
         else if length rest == 5 && (rest !! 2 == "-s" || rest !! 2 == "--sniper") 
           then Input "m" [read (head rest)] [read (rest !! 1)] "r" [read (last rest)]
           else Message "wrong number of arguments, please use --help for usage"
+    "comb" ->
+      if length rest == 2
+        then Input "b" [read (head rest)] [read (rest !! 1)] "n" []
+        else if length rest == 5 && (rest !! 2 == "-s" || rest !! 2 == "--sniper") 
+          then Input "b" [read (head rest)] [read (rest !! 1)] "r" [read (last rest)]
+          else Message "wrong number of arguments, please use --help for usage"
     _ -> Message "please have a look at the usage of the command: proto-sim --help"

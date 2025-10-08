@@ -31,11 +31,11 @@ stringify :: (Int, [Int], Int) -> String
 stringify (l, s, h) =
   "(" ++ show l ++ "; " ++ Util.intArrayToString s ++ "; " ++ show h ++ ")"
 
-output :: Int -> (Int, [Int], Int) -> Int
+output :: Int -> (Int, [Int], Int) -> String
 output m (_, s, h) =
   if h < 2 * m + 1
-    then h `mod` m
-    else mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res)
+    then show (h `mod` m)
+    else show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res))
 
 get :: Int -> Int -> Sniper (Int, [Int], Int) a -> Protocols.Protocol (Int, [Int], Int) a
 get m x0 sn = (input m x0, delta m, stringify, output m, sn)

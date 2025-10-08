@@ -7,6 +7,7 @@ import Parsing
 import Protocols
 import Protocols.Cut
 import Protocols.Modulo
+import Protocols.Combined
 import System.Environment
 import System.Random
 import Util
@@ -34,6 +35,12 @@ run input =
         ("m", "r") -> do
           putStrLn ("\na0 = " ++ show (head a) ++ "; x0 = " ++ show (head x) ++ "\n")
           simulate (Protocols.Modulo.get (head a) (head x) (Protocols.randomSniper (head c)))
+        ("b", "n") -> do
+          putStrLn ("\na0 = " ++ show (head a) ++ "; x0 = " ++ show (head x) ++ "\n")
+          simulate (Protocols.Combined.get (head a) (head x) Protocols.noSniper)
+        ("b", "r") -> do
+          putStrLn ("\na0 = " ++ show (head a) ++ "; x0 = " ++ show (head x) ++ "\n")
+          simulate (Protocols.Combined.get (head a) (head x) (Protocols.randomSniper (head c)))
         _ -> putStrLn "no such protocol"
 
 simulate :: (Eq a) => Protocols.Protocol a b -> IO ()
@@ -44,7 +51,7 @@ simulate (c, d, s, o, sn) =
             let Just output = getOutput (states, d, s, o, sniper)
              in putStrLn (printConfig states (-1) (-1) s)
                   >> putStrLn ""
-                  >> putStrLn ("Output: " ++ show output)
+                  >> putStrLn ("Output: " ++ output)
           else
             let (a1, a2, newStates, newSniper, newGen) = step (states, d, s, o, sniper) gen
              in putStrLn (printConfig states (-1) (-1) s)
@@ -103,7 +110,7 @@ selectAgents (states, delta, _, _, _) g =
                       else result newGen2
    in result g
 
-getOutput :: Protocols.Protocol a b -> Maybe Int
+getOutput :: Protocols.Protocol a b -> Maybe String
 getOutput (c, _, _, o, _) =
   let outputs = Data.List.map head (Data.List.group (Data.Maybe.mapMaybe (\(b, s) -> if b then Just (o s) else Nothing) c))
    in case outputs of

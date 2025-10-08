@@ -2,11 +2,10 @@ module Protocols where
 
 import Data.List
 import System.Random
-import Data.Type.Equality (inner)
 
 type Configuration a = [(Bool, a)]
 
-type Protocol a b = (Configuration a, a -> a -> (a, a), a -> String, a -> Int, Sniper a b)
+type Protocol a b = (Configuration a, a -> a -> (a, a), a -> String, a -> String, Sniper a b)
 
 deltaWrapper :: (a -> a -> (a, a)) -> ((Bool, a) -> (Bool, a) -> ((Bool, a), (Bool, a)))
 deltaWrapper d (b1, s1) (b2, s2) =

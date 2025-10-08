@@ -18,8 +18,8 @@ stringify :: (Int, Int) -> String
 stringify (l, h) =
   "(" ++ show l ++ "; " ++ show h ++ ")"
 
-output :: (Int, Int) -> Int
-output (_, h) = h
+output :: (Int, Int) -> String
+output (_, h) = show h
 
 get :: Int -> Sniper (Int, Int) a -> Protocols.Protocol (Int, Int) a
 get x0 sn = (input x0, delta, stringify, output, sn)
