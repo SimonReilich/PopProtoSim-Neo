@@ -25,22 +25,31 @@ main :: IO ()
 main = do
   args <- parseArgsOrExit patterns =<< getArgs
 
+  when (args `isPresent` longOption "help") $ do
+    readFile "USAGE.txt" >>= putStrLn
+
   when (args `isPresent` command "cut") $ do
     x0 <- args `getArgOrExit` argument "x0"
-    let proto = Protocols.Cut.get 
-      in simulate proto [read x0] Snipers.noSniper
+    let proto = Protocols.Cut.get
+      in case getArgWithDefault args "" (longOption "sniper") of
+        "" -> simulate proto [read x0] Snipers.noSniper
+        rt -> simulate proto [read x0] (Snipers.randomSniper (read rt))
 
   when (args `isPresent` command "mod") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     let proto = Protocols.Modulo.get (read m)
-      in simulate proto [read x0] Snipers.noSniper
+      in case getArgWithDefault args "" (longOption "sniper") of
+        "" -> simulate proto [read x0] Snipers.noSniper
+        rt -> simulate proto [read x0] (Snipers.randomSniper (read rt))
 
   when (args `isPresent` command "cmb") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     let proto = Protocols.Combined.get (read m)
-      in simulate proto [read x0] Snipers.noSniper
+      in case getArgWithDefault args "" (longOption "sniper") of
+        "" -> simulate proto [read x0] Snipers.noSniper
+        rt -> simulate proto [read x0] (Snipers.randomSniper (read rt))
 
 simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> IO ()
 simulate (m, d, s, o) x sn =
@@ -55,7 +64,6 @@ simulate (m, d, s, o) x sn =
             let (a1, a2, newStates, newSniper, newGen) = step states (m, d, s, o) sniper gen
              in putStrLn (printConfig states (-1) (-1) s)
                   >> putStrLn (printConfig states a1 a2 s)
-                  >> putStrLn (printConfig newStates a1 a2 s)
                   >> helper newStates newSniper newGen
    in helper (Protocols.getInitial (m, d, s, o) x) sn (mkStdGen 0)
 

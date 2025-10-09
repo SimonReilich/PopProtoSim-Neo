@@ -5,7 +5,7 @@ import Data.Ord
 import Protocols
 
 printConfig :: Configuration a -> Int -> Int -> (a -> String) -> String
-printConfig [] _ _ _ = " |"
+printConfig [] _ _ _ = "|"
 printConfig ((b, s) : states) a1 a2 stringify
   | not b =              "| -" ++ stringify s ++ "- " ++ printConfig states (a1 - 1) (a2 - 1) stringify
   | a1 == 0 || a2 == 0 = "| *" ++ stringify s ++ "* " ++ printConfig states (a1 - 1) (a2 - 1) stringify
