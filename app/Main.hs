@@ -32,27 +32,33 @@ main = do
     x0 <- args `getArgOrExit` argument "x0"
     let proto = Protocols.Cut.get
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper
-        rt -> simulate proto [read x0] (Snipers.randomSniper (read rt))
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args)
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args)
 
   when (args `isPresent` command "mod") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     let proto = Protocols.Modulo.get (read m)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper
-        rt -> simulate proto [read x0] (Snipers.randomSniper (read rt))
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args)
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args)
 
   when (args `isPresent` command "cmb") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     let proto = Protocols.Combined.get (read m)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper
-        rt -> simulate proto [read x0] (Snipers.randomSniper (read rt))
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args)
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args)
 
-simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> IO ()
-simulate (m, d, s, o) x sn =
+getSeed :: Arguments -> Int
+getSeed args =
+  case getArgWithDefault args "" (longOption "seed") of
+    "" -> 0
+    seed -> read seed
+
+simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> IO ()
+simulate (m, d, s, o) x sn seed =
   let helper states sniper gen =
         if isStable states (m, d, s, o)
           then
@@ -65,7 +71,7 @@ simulate (m, d, s, o) x sn =
              in putStrLn (printConfig states (-1) (-1) s)
                   >> putStrLn (printConfig states a1 a2 s)
                   >> helper newStates newSniper newGen
-   in helper (Protocols.getInitial (m, d, s, o) x) sn (mkStdGen 0)
+   in putStrLn "" >> helper (Protocols.getInitial (m, d, s, o) x) sn (mkStdGen seed)
 
 step :: (Eq a) => Configuration a -> Protocol a -> Sniper a s -> StdGen -> (Int, Int, Configuration a, Sniper a s, StdGen)
 step states (mapping, delta, stringify, output) (sniperState, sniping) gen =

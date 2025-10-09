@@ -6,8 +6,8 @@ import Protocols
 
 type Sniper a s = (s, Configuration a -> s -> (s, Maybe Int))
 
-randomSniper :: Float -> Sniper a StdGen
-randomSniper chance =
+randomSniper :: Int -> Float -> Sniper a StdGen
+randomSniper seed chance =
   let snipe config gen =
         if length (Data.List.filter fst config) >= 2
           then
@@ -19,17 +19,7 @@ randomSniper chance =
                      in (gen2, Just agent)
                   else (gen1, Nothing)
           else (gen, Nothing)
-   in (mkStdGen 0, snipe)
-
-maxSniper :: Sniper a b -> Int -> Sniper a (Int, b)
-maxSniper (innerState, sniping) max =
-  let snipe config (number, innerState) =
-        if number == max 
-      then ((number, innerState), Nothing)
-      else case sniping config innerState of
-        (newInnerState, Nothing) -> ((number, newInnerState), Nothing)
-        (newInnerState, Just i)  -> ((number + 1, newInnerState), Just i)
-  in ((0, innerState), snipe)
+   in (mkStdGen seed, snipe)
 
 noSniper :: Sniper a ()
 noSniper =
