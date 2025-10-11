@@ -7,13 +7,15 @@ import Data.List.Duplicate
 import Data.Maybe
 import Protocols
 import Snipers
-import Protocols.Cut
-import Protocols.Modulo
-import Protocols.Combined
+import Protocols.Cut hiding (input, stringify, delta, output)
+import Protocols.Modulo hiding (input, stringify, delta, output)
+import Protocols.Combined hiding (output)
 import System.Environment
 import System.Random
 import System.Console.Docopt
+import Text.Colour
 import Util
+import Data.Text hiding (length, head, replace, replicate, find, any)
 
 patterns :: Docopt
 patterns = [docoptFile|USAGE.txt|]
@@ -30,26 +32,28 @@ main = do
 
   when (args `isPresent` command "cut") $ do
     x0 <- args `getArgOrExit` argument "x0"
-    let proto = Protocols.Cut.get
+    t <- args `getArgOrExit` argument "t"
+    let proto = Protocols.Cut.get (read t)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args)
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args)
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (args `isPresent` longOption "slow")
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (args `isPresent` longOption "slow")
 
   when (args `isPresent` command "mod") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     let proto = Protocols.Modulo.get (read m)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args)
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args)
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (args `isPresent` longOption "slow")
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (args `isPresent` longOption "slow")
 
   when (args `isPresent` command "cmb") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
-    let proto = Protocols.Combined.get (read m)
+    t <- args `getArgOrExit` argument "t"
+    let proto = Protocols.Combined.get (read m) (read t)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args)
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args)
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (args `isPresent` longOption "slow")
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (args `isPresent` longOption "slow")
 
 getSeed :: Arguments -> Int
 getSeed args =
@@ -57,19 +61,19 @@ getSeed args =
     "" -> 0
     seed -> read seed
 
-simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> IO ()
-simulate (m, d, s, o) x sn seed =
+simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> Bool -> IO ()
+simulate (m, d, s, o) x sn seed slow =
   let helper states sniper gen =
         if isStable states (m, d, s, o)
           then
             let Just output = getOutput states (m, d, s, o)
-             in putStrLn (printConfig states (-1) (-1) s)
+             in printConfig states (-1) (-1) s slow
                   >> putStrLn ""
-                  >> putStrLn ("Output: " ++ output)
+                  >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), output]
           else
             let (a1, a2, newStates, newSniper, newGen) = step states (m, d, s, o) sniper gen
-             in putStrLn (printConfig states (-1) (-1) s)
-                  >> putStrLn (printConfig states a1 a2 s)
+             in printConfig states (-1) (-1) s slow
+                  >> printConfig states a1 a2 s slow
                   >> helper newStates newSniper newGen
    in putStrLn "" >> helper (Protocols.getInitial (m, d, s, o) x) sn (mkStdGen seed)
 
@@ -106,7 +110,7 @@ isStable c (m, d, s, o) =
                   Just _ -> False
                   Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found) output
        in case getOutput c (m, d, s, o) of
-            Just r -> helper [Data.Maybe.mapMaybe (\(b, s) -> if b then Just s else Nothing) c] [] r
+            Just r -> helper [Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c] [] r
             Nothing -> False
 
 selectAgents :: (Eq a) => Configuration a -> Protocol a -> StdGen -> (Int, Int, StdGen)
@@ -123,7 +127,7 @@ selectAgents states (_, delta, _, _) g =
                       else result newGen2
    in result g
 
-getOutput :: Configuration a -> Protocol a -> Maybe String
+getOutput :: Configuration a -> Protocol a -> Maybe Chunk
 getOutput c (_, _, _, o) =
   let outputs = Data.List.map head (Data.List.group (Data.Maybe.mapMaybe (\(b, s) -> if b then Just (o s) else Nothing) c))
    in case outputs of

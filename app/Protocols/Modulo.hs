@@ -3,6 +3,8 @@ module Protocols.Modulo where
 import Data.List
 import Protocols
 import Util
+import Data.Text hiding (length, head, replace, replicate)
+import Text.Colour
 
 input :: Int -> Int -> (Int, [Int], Int)
 input m _ = (0, 1 : replicate (2 * m) 0, 1)
@@ -24,15 +26,17 @@ delta m (l1, s1, h1) (l2, s2, h2)
   | l2 <= 2 * m + 1 = ((l1, Util.replace l2 (s2 !! l2) s1, max h1 h2), (l2, s2, max h1 h2))
   | otherwise = ((l1, s1, max h1 h2), (l2, s2, max h1 h2))
 
-stringify :: (Int, [Int], Int) -> String
-stringify (l, s, h) =
-  "(" ++ show l ++ "; " ++ Util.intArrayToString s ++ "; " ++ show h ++ ")"
+stringify :: Int -> (Int, [Int], Int) -> Chunk
+stringify m (l, s, h) =
+  let (r, g, b) = Util.hslToRgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
+   in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ Util.vec2String s ++ ";" ++ show h ++ ")")))
 
-output :: Int -> (Int, [Int], Int) -> String
+output :: Int -> (Int, [Int], Int) -> Chunk
 output m (_, s, h) =
-  if h < 2 * m + 1
-    then show (h `mod` m)
-    else show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res))
+  let (r, g, b) = Util.hslToRgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
+  in if h < 2 * m + 1
+    then fore (colourRGB r g b) (chunk (pack (show (h `mod` m))))
+    else fore (colourRGB r g b) (chunk (pack (show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res)))))
 
 get :: Int -> Protocols.Protocol (Int, [Int], Int)
-get m = (input m, delta m, stringify, output m)
+get m = (input m, delta m, stringify m, output m)

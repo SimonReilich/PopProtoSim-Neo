@@ -77,7 +77,9 @@ executable proto-sim
                       list-duplicate,
                       containers,
                       split,
-                      docopt
+                      docopt,
+                      text,
+                      safe-coloured-text
 
     -- Directories containing source files.
     hs-source-dirs:   app

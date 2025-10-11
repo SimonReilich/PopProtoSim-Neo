@@ -1,8 +1,10 @@
 module Protocols where
 
+import Text.Colour
+
 type Configuration a = [(Bool, a)]
 
-type Protocol a = (Int -> a, a -> a -> (a, a), a -> String, a -> String)
+type Protocol a = (Int -> a, a -> a -> (a, a), a -> Chunk, a -> Chunk)
 
 deltaWrapper :: (a -> a -> (a, a)) -> ((Bool, a) -> (Bool, a) -> ((Bool, a), (Bool, a)))
 deltaWrapper d (b1, s1) (b2, s2) =
