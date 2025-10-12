@@ -8,9 +8,9 @@ import Data.Word
 import Data.Text hiding (length, head, replace, replicate, find, any)
 import Control.Concurrent
 
-printConfig :: Configuration a -> Int -> Int -> (a -> Chunk) -> Bool -> IO ()
-printConfig s s1 s2 stringify slow =
-  threadDelay (if slow then 1000000 else 0) >>
+printConfig :: Configuration a -> Int -> Int -> (a -> Chunk) -> Int -> IO ()
+printConfig s s1 s2 stringify delay =
+  threadDelay delay >>
   let
     helper [] _ _ = [chunk (pack "\n")]
     helper ((b, s) : states) a1 a2

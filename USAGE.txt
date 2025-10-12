@@ -1,12 +1,12 @@
 
 Usage:
-  proto-sim cut <x0> <t> [options]
-  proto-sim mod <x0> <m> [options]
-  proto-sim cmb <x0> <m> <t> [options]
-  proto-sim [--help]
+  proto-sim cut <x0> <t> [-sdr]
+  proto-sim mod <x0> <m> [-sdr]
+  proto-sim cmb <x0> <m> <t> [-sdr]
+  proto-sim -h
 
 Options:
-  -s <rt>, --sniper <rt>    Enables the sniper with rate <rt>.
-  --seed <sd>               Custom seed for random number generation.
-  --slow                    Prints the execution steps with delay.
+  -s=<rt>, --sniper=<rt>    Enables the sniper with rate <rt>.
+  -d=<dl>, --delay=<dl>     Prints the execution steps with delay <dl> [default: 0.0].
+  -r=<sd>, --random=<sd>    Custom seed for random number generation.
   -h, --help                Show this screen.

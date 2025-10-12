@@ -35,16 +35,16 @@ main = do
     t <- args `getArgOrExit` argument "t"
     let proto = Protocols.Cut.get (read t)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (args `isPresent` longOption "slow")
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (args `isPresent` longOption "slow")
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (getDelay args)
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (getDelay args)
 
   when (args `isPresent` command "mod") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     let proto = Protocols.Modulo.get (read m)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (args `isPresent` longOption "slow")
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (args `isPresent` longOption "slow")
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (getDelay args)
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (getDelay args)
 
   when (args `isPresent` command "cmb") $ do
     x0 <- args `getArgOrExit` argument "x0"
@@ -52,28 +52,34 @@ main = do
     t <- args `getArgOrExit` argument "t"
     let proto = Protocols.Combined.get (read m) (read t)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (args `isPresent` longOption "slow")
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (args `isPresent` longOption "slow")
+        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (getDelay args)
+        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (getDelay args)
 
 getSeed :: Arguments -> Int
 getSeed args =
-  case getArgWithDefault args "" (longOption "seed") of
+  case getArgWithDefault args "" (longOption "random") of
     "" -> 0
     seed -> read seed
 
-simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> Bool -> IO ()
-simulate (m, d, s, o) x sn seed slow =
+getDelay :: Arguments -> Int
+getDelay args =
+  case getArgWithDefault args "" (longOption "delay") of
+    "" -> 0
+    seed -> round (read seed * 1000000)
+
+simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> Int -> IO ()
+simulate (m, d, s, o) x sn seed delay =
   let helper states sniper gen =
         if isStable states (m, d, s, o)
           then
             let Just output = getOutput states (m, d, s, o)
-             in printConfig states (-1) (-1) s slow
+             in printConfig states (-1) (-1) s delay
                   >> putStrLn ""
                   >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), output]
           else
             let (a1, a2, newStates, newSniper, newGen) = step states (m, d, s, o) sniper gen
-             in printConfig states (-1) (-1) s slow
-                  >> printConfig states a1 a2 s slow
+             in printConfig states (-1) (-1) s delay
+                  >> printConfig states a1 a2 s delay
                   >> helper newStates newSniper newGen
    in putStrLn "" >> helper (Protocols.getInitial (m, d, s, o) x) sn (mkStdGen seed)
 
