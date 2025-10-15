@@ -16,12 +16,12 @@ delta (l1, h1) (l2, h2) =
 
 stringify :: Int -> (Int, Int) -> Chunk
 stringify t (l, h) =
-  let (r, g, b) = Util.hslToRgb (fromIntegral h / fromIntegral t) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (fromIntegral h / fromIntegral t) 1.0 0.5
   in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ show h ++ ")")))
 
 output :: Int -> (Int, Int) -> Chunk
 output t (_, h) =
-  let (r, g, b) = Util.hslToRgb (fromIntegral h / fromIntegral t) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (fromIntegral h / fromIntegral t) 1.0 0.5
   in fore (colourRGB r g b) (chunk (pack (show h)))
 
 get :: Int -> Protocols.Protocol (Int, Int)

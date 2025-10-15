@@ -28,12 +28,12 @@ delta m (l1, s1, h1) (l2, s2, h2)
 
 stringify :: Int -> (Int, [Int], Int) -> Chunk
 stringify m (l, s, h) =
-  let (r, g, b) = Util.hslToRgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
    in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ Util.vec2String s ++ ";" ++ show h ++ ")")))
 
 output :: Int -> (Int, [Int], Int) -> Chunk
 output m (_, s, h) =
-  let (r, g, b) = Util.hslToRgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
   in if h < 2 * m + 1
     then fore (colourRGB r g b) (chunk (pack (show (h `mod` m))))
     else fore (colourRGB r g b) (chunk (pack (show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res)))))

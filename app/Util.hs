@@ -27,19 +27,12 @@ replace i e (x : xs) =
     then e : xs
     else x : replace (i - 1) e xs
 
-intArrayToString :: [Int] -> String
-intArrayToString list =
-  let helper [] = "]"
-      helper [x] = show x ++ "]"
-      helper (x : xs) = show x ++ ";" ++ helper xs
-   in "[" ++ helper list
-
 mostCommon :: (Eq a) => [a] -> a
 mostCommon list =
   head (Data.List.maximumBy (Data.Ord.comparing length) (Data.List.group list))
 
-hslToRgb :: Float -> Float -> Float -> (Word8, Word8, Word8)
-hslToRgb h s l =
+hsl2Rgb :: Float -> Float -> Float -> (Word8, Word8, Word8)
+hsl2Rgb h s l =
   if s == 0
     then (round (l + 255), round (l + 255), round (l + 255))
     else
@@ -47,15 +40,15 @@ hslToRgb h s l =
       in
         let p = 2 * l - q
         in (
-          round (hueToRgb p q (h + 1/3) * 255),
-          round (hueToRgb p q h * 255),
-          round (hueToRgb p q (h - 1/3) * 255)
+          round (hue2Rgb p q (h + 1/3) * 255),
+          round (hue2Rgb p q h * 255),
+          round (hue2Rgb p q (h - 1/3) * 255)
         )
 
-hueToRgb :: Float -> Float -> Float -> Float
-hueToRgb p q t
-  | t < 0     = hueToRgb p q (t + 1)
-  | t > 1     = hueToRgb p q (t - 1)
+hue2Rgb :: Float -> Float -> Float -> Float
+hue2Rgb p q t
+  | t < 0     = hue2Rgb p q (t + 1)
+  | t > 1     = hue2Rgb p q (t - 1)
   | t < 1/6   = p + (q - p) * 6 * t
   | t < 1/2   = q
   | t < 2/3   = p + (q - p) * (2/3 - t) * 6
