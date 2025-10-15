@@ -15,7 +15,8 @@ import System.Random
 import System.Console.Docopt
 import Text.Colour
 import Util
-import Data.Text hiding (length, head, replace, replicate, find, any)
+import Data.Text hiding (length, head, replace, replicate, find, any, null)
+import qualified Snipers as Sniper
 
 patterns :: Docopt
 patterns = [docoptFile|USAGE.txt|]
@@ -33,69 +34,77 @@ main = do
   when (args `isPresent` command "cut") $ do
     x0 <- args `getArgOrExit` argument "x0"
     t <- args `getArgOrExit` argument "t"
+    seed <- getSeed args
+    delay <- getDelay args
     let proto = Protocols.Cut.get (read t)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (getDelay args)
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (getDelay args)
+        "" -> simulate proto [read x0] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "noCheck"))
+        rt -> simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "noCheck"))
 
   when (args `isPresent` command "mod") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
+    seed <- getSeed args
+    delay <- getDelay args
     let proto = Protocols.Modulo.get (read m)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (getDelay args)
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (getDelay args)
+        "" -> simulate proto [read x0] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "noCheck"))
+        rt -> simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "noCheck"))
 
   when (args `isPresent` command "cmb") $ do
     x0 <- args `getArgOrExit` argument "x0"
     m <- args `getArgOrExit` argument "m"
     t <- args `getArgOrExit` argument "t"
+    seed <- getSeed args
+    delay <- getDelay args
     let proto = Protocols.Combined.get (read m) (read t)
       in case getArgWithDefault args "" (longOption "sniper") of
-        "" -> simulate proto [read x0] Snipers.noSniper (getSeed args) (getDelay args)
-        rt -> simulate proto [read x0] (Snipers.randomSniper (getSeed args) (read rt)) (getSeed args) (getDelay args)
+        "" -> simulate proto [read x0] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "noCheck"))
+        rt -> simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "noCheck"))
 
-getSeed :: Arguments -> Int
+getSeed :: Arguments -> IO Int
 getSeed args =
   case getArgWithDefault args "" (longOption "random") of
-    "" -> 0
-    seed -> read seed
+    "" -> return 0
+    seed -> return (read seed)
 
-getDelay :: Arguments -> Int
+getDelay :: Arguments -> IO Int
 getDelay args =
   case getArgWithDefault args "" (longOption "delay") of
-    "" -> 0
-    seed -> round (read seed * 1000000)
+    "" -> return 0
+    delay -> return (round ((read delay :: Double) * 1000000))
 
-simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> Int -> IO ()
-simulate (m, d, s, o) x sn seed delay =
+simulate :: (Eq a) => Protocol a -> [Int] -> Sniper a s -> Int -> Int -> Bool -> IO ()
+simulate (m, d, s, o) x sn seed delay doCheck =
   let helper states sniper gen =
-        if isStable states (m, d, s, o)
+        if isStable doCheck states (m, d, s, o)
           then
             let Just output = getOutput states (m, d, s, o)
-             in printConfig states (-1) (-1) s delay
-                  >> putStrLn ""
-                  >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), output]
-          else
-            let (a1, a2, newStates, newSniper, newGen) = step states (m, d, s, o) sniper gen
-             in printConfig states (-1) (-1) s delay
-                  >> printConfig states a1 a2 s delay
-                  >> helper newStates newSniper newGen
+             in putStrLn "" >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), output]
+          else do
+            (newStates, newSniper, newGen) <- step states (m, d, s, o) sniper gen delay doCheck
+            helper newStates newSniper newGen
    in putStrLn "" >> helper (Protocols.getInitial (m, d, s, o) x) sn (mkStdGen seed)
 
-step :: (Eq a) => Configuration a -> Protocol a -> Sniper a s -> StdGen -> (Int, Int, Configuration a, Sniper a s, StdGen)
-step states (mapping, delta, stringify, output) (sniperState, sniping) gen =
+step :: (Eq a) => Configuration a -> Protocol a -> Sniper a s -> StdGen -> Int -> Bool -> IO (Configuration a, Sniper a s, StdGen)
+step states (mapping, delta, stringify, output) (sniperState, sniping) gen delay doCheck = do
   let (a1, a2, newGen) = selectAgents states (mapping, delta, stringify, output) gen
    in let (q1, q2) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
        in let newStates = replace a1 q1 (replace a2 q2 states)
-           in let (newSniperState, killed) = sniping newStates sniperState
-               in case killed of
-                    Just i -> (a1, a2, replace i (False, let (_, s) = newStates !! i in s) newStates, (newSniperState, sniping), newGen)
-                    Nothing -> (a1, a2, newStates, (newSniperState, sniping), newGen)
+           in do 
+            printConfig states a1 a2 stringify delay
+            printConfig newStates (-1) (-1) stringify delay
+            if not (isStable doCheck newStates (mapping, delta, stringify, output))
+              then do
+                (newSniperState, killed) <- sniping newStates sniperState
+                case killed of
+                  Just i -> return (replace i (False, let (_, s) = newStates !! i in s) newStates, (newSniperState, sniping), newGen)
+                  Nothing -> return (newStates, (newSniperState, sniping), newGen)
+              else return (newStates, (sniperState, sniping), newGen)
 
-isStable :: (Eq a) => Configuration a -> Protocol a -> Bool
-isStable c (m, d, s, o) =
-  let getAllConf states (mapping, delta, stringify, output) =
+isStable :: (Eq a) => Bool -> Configuration a -> Protocol a -> Bool
+isStable doCheck c (m, d, s, o) =
+  let getAllConf states (mapping, delta, stringify, output) = 
         case states of
           [] -> []
           x : xs ->
@@ -108,15 +117,23 @@ isStable c (m, d, s, o) =
               )
               (deleteDups (Data.Maybe.mapMaybe (`elemIndex` xs) xs))
               ++ Data.List.map (x :) (getAllConf xs (mapping, delta, stringify, output))
-   in let helper [] _ _ =
+   in let helperCheck [] _ _ =
             True
-          helper (current : queue) found output =
+          helperCheck (current : queue) found output =
             let successors = getAllConf current (m, d, s, o)
              in case find (any (\state -> output /= o state)) successors of
                   Just _ -> False
-                  Nothing -> helper (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found) output
-       in case getOutput c (m, d, s, o) of
-            Just r -> helper [Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c] [] r
+                  Nothing -> helperCheck (queue ++ Data.List.filter (\state -> notElem state found && notElem state queue) successors) (current : found) output
+          helperNoCheck [] _ =
+            True
+          helperNoCheck (first : states) delta =
+            (not (Data.List.any (\s -> (
+                let (q1, q2) = delta first s
+                in not ((q1 == first && q2 == s) || (q1 == s && q2 == first)))) states) && helperNoCheck states delta)
+        in case getOutput c (m, d, s, o) of
+            Just r -> if doCheck
+              then helperCheck [Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c] [] r
+              else helperNoCheck (Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c) d
             Nothing -> False
 
 selectAgents :: (Eq a) => Configuration a -> Protocol a -> StdGen -> (Int, Int, StdGen)
