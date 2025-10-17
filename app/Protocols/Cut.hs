@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Protocols.Cut where
 
 import Protocols
@@ -19,10 +21,18 @@ stringify t (l, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral h / fromIntegral t) 1.0 0.5
   in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ show h ++ ")")))
 
-output :: Int -> (Int, Int) -> Chunk
+output :: Int -> (Int, Int) -> (Int, Colour)
 output t (_, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral h / fromIntegral t) 1.0 0.5
-  in fore (colourRGB r g b) (chunk (pack (show h)))
+  in (h, colourRGB r g b)
 
-get :: Int -> Protocols.Protocol (Int, Int)
-get t = (input, delta, stringify t, output t)
+test :: Int -> [Int] -> Int -> Int
+test t [x0] result =
+  if min t x0 == result 
+    then 0
+    else 1 + test t [x0 - 1] result
+test _ _ _ =
+  0
+
+get :: Int -> Protocols.Protocol (Int, Int) Int
+get t = (input, delta, stringify t, output t, test t)

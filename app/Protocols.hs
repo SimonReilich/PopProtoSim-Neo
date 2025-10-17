@@ -1,10 +1,11 @@
+{-# LANGUAGE RankNTypes #-}
 module Protocols where
 
 import Text.Colour
 
 type Configuration a = [(Bool, a)]
 
-type Protocol a = (Int -> a, a -> a -> (a, a), a -> Chunk, a -> Chunk)
+type Protocol a b = Eq b => Show b => (Int -> a, a -> a -> (a, a), a -> Chunk, a -> (b, Colour), [Int] -> b -> Int)
 
 deltaWrapper :: (a -> a -> (a, a)) -> ((Bool, a) -> (Bool, a) -> ((Bool, a), (Bool, a)))
 deltaWrapper d (b1, s1) (b2, s2) =
@@ -14,8 +15,8 @@ deltaWrapper d (b1, s1) (b2, s2) =
        in ((b1, s1n), (b2, s2n))
     else ((b1, s1), (b2, s2))
 
-getInitial :: Protocol a -> [Int] -> Configuration a
-getInitial (mapping, _, _, _) input =
+getInitial :: Eq b => Show b => Protocol a b -> [Int] -> Configuration a
+getInitial (mapping, _, _, _, _) input =
   let 
     helper acc _ [] = acc
     helper acc i (x : xs) =

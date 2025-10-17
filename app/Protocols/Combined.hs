@@ -1,9 +1,11 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Protocols.Combined where
 
 import Data.List
 import Util
 import Protocols
-import Protocols.Modulo hiding (delta, stringify, output)
+import Protocols.Modulo hiding (delta, stringify, output, test)
 import Data.Text hiding (length, head, replace)
 import Text.Colour
 
@@ -31,12 +33,20 @@ stringify m t (l, s, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) (0.75 * (fromIntegral (min h t) / fromIntegral t) + 0.25) 0.5
    in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ Util.vec2String s ++ ";" ++ show h ++ ")")))
 
-output :: Int -> Int -> (Int, [Int], Int) -> Chunk
+output :: Int -> Int -> (Int, [Int], Int) -> ((Int, Int), Colour)
 output m t (_, s, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) (0.75 * (fromIntegral (min h t) / fromIntegral t) + 0.25) 0.5
   in if h < 2 * m + 1
-    then fore (colourRGB r g b) (chunk (pack ("(" ++ show (h `mod` m) ++ ";" ++ show (min h t) ++ ")")))
-    else fore (colourRGB r g b) (chunk (pack ("(" ++ show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res)) ++ ";" ++ show (min h t) ++ ")")))
+    then ((h `mod` m, min h t), colourRGB r g b)
+    else ((mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res), min h t), colourRGB r g b)
 
-get :: Int -> Int -> Protocols.Protocol (Int, [Int], Int)
-get m t = (Protocols.Modulo.input m, delta m (max t (2 * m + 2)), stringify m t, output m t)
+test :: Int -> Int -> [Int] -> (Int, Int) -> Int
+test m t [x0] (rMod, rCut) =
+  if x0 `mod` m == rMod && min t x0 == rCut 
+    then 0
+    else 1 + test m t [x0 - 1] (rMod, rCut)
+test _ _ _ _ =
+  0
+
+get :: Int -> Int -> Protocols.Protocol (Int, [Int], Int) (Int, Int)
+get m t = (Protocols.Modulo.input m, delta m (max t (2 * m + 2)), stringify m t, output m t, test m t)

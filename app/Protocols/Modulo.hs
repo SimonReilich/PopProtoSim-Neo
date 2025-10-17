@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Protocols.Modulo where
 
 import Data.List
@@ -31,12 +33,20 @@ stringify m (l, s, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
    in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ Util.vec2String s ++ ";" ++ show h ++ ")")))
 
-output :: Int -> (Int, [Int], Int) -> Chunk
+output :: Int -> (Int, [Int], Int) -> (Int, Colour)
 output m (_, s, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
   in if h < 2 * m + 1
-    then fore (colourRGB r g b) (chunk (pack (show (h `mod` m))))
-    else fore (colourRGB r g b) (chunk (pack (show (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res)))))
+    then (h `mod` m, colourRGB r g b)
+    else (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res), colourRGB r g b)
 
-get :: Int -> Protocols.Protocol (Int, [Int], Int)
-get m = (input m, delta m, stringify m, output m)
+test :: Int -> [Int] -> Int -> Int
+test m [x0] result =
+  if x0 `mod` m == result 
+    then 0
+    else 1 + test m [x0 - 1] result
+test _ _ _ =
+  0
+
+get :: Int -> Protocols.Protocol (Int, [Int], Int) Int
+get m = (input m, delta m, stringify m, output m, test m)
