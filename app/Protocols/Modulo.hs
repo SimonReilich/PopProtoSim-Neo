@@ -1,5 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
 module Protocols.Modulo where
 
 import Data.List
