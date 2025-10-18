@@ -3,6 +3,9 @@ Usage:
   proto-sim cut <x0> <t> [-smdrn]
   proto-sim mod <x0> <m> [-smdrn]
   proto-sim cmb <x0> <m> <t> [-smdrn]
+  proto-sim cut-stat <x0Max> <tMin> <tMax> -sr [-n]
+  proto-sim mod-stat <x0Max> <mMin> <mMax> -sr [-n]
+  proto-sim cmb-stat <x0Max> <mMin> <mMax> <tMin> <tMax> -sr [-n]
   proto-sim -h
 
 Options:
