@@ -1,10 +1,11 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
+
 module Protocols.Cut where
 
+import Data.Text hiding (head, length, replace)
 import Protocols
-import Data.Text hiding (length, head, replace)
 import Text.Colour
 import Util
 
@@ -20,12 +21,12 @@ delta t (l1, h1) (l2, h2) =
 stringify :: Int -> (Int, Int) -> Chunk
 stringify t (l, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral h / fromIntegral t) 1.0 0.5
-  in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ show h ++ ")")))
+   in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ show h ++ ")")))
 
 output :: Int -> (Int, Int) -> (Int, Colour)
 output t (_, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral (min h t) / fromIntegral t) 1.0 0.5
-  in (min h t, colourRGB r g b)
+   in (min h t, colourRGB r g b)
 
 test :: Int -> [Int] -> Int -> Int
 test t [x0] result =

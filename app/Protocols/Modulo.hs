@@ -1,13 +1,14 @@
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
+
 module Protocols.Modulo where
 
 import Data.List
+import Data.Text hiding (head, length, replace, replicate)
 import Protocols
-import Util
-import Data.Text hiding (length, head, replace, replicate)
 import Text.Colour
+import Util
 
 input :: Int -> Int -> (Int, [Int], Int)
 input m _ = (0, 1 : replicate (2 * m) 0, 1)
@@ -37,13 +38,13 @@ stringify m (l, s, h) =
 output :: Int -> (Int, [Int], Int) -> (Int, Colour)
 output m (_, s, h) =
   let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
-  in if h < 2 * m + 1
-    then (h `mod` m, colourRGB r g b)
-    else (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res), colourRGB r g b)
+   in if h < 2 * m + 1
+        then (h `mod` m, colourRGB r g b)
+        else (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res), colourRGB r g b)
 
 test :: Int -> [Int] -> Int -> Int
 test m [x0] result =
-  if x0 `mod` m == result 
+  if x0 `mod` m == result
     then 0
     else 1 + test m [x0 - 1] result
 test _ _ _ =

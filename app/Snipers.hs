@@ -1,9 +1,9 @@
 module Snipers where
 
 import Data.List
-import System.Random
 import Protocols
 import System.IO
+import System.Random
 
 type Sniper a s = (s, Configuration a -> s -> IO (s, Maybe Int))
 
@@ -12,13 +12,16 @@ randomSniper seed chance =
   let snipe config gen =
         if length (Data.List.filter fst config) >= 2
           then
-            let (res, gen1) =
-                  randomR (0.0, 1.0) gen
+            let (res, genNew) = randomR (0.0, 1.0) gen
              in if res < chance
                   then
-                    let (agent, gen2) = randomR (0, length config - 1) gen1
-                     in return (gen2, Just agent)
-                  else return (gen1, Nothing)
+                    let helper gen =
+                          let (agent, genNew) = randomR (0, length config - 1) gen
+                           in if (case config !! agent of (b, _) -> b)
+                                then return (genNew, Just agent)
+                                else helper genNew
+                     in helper genNew
+                  else return (genNew, Nothing)
           else return (gen, Nothing)
    in (mkStdGen seed, snipe)
 
@@ -34,7 +37,7 @@ manualSniper =
             let r = ((), if agent > 0 && agent <= length config then Just (agent - 1) else Nothing)
             putStrLn ""
             return r
-  in ((), snipe)
+   in ((), snipe)
 
 noSniper :: Sniper a ()
 noSniper =
