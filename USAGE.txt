@@ -1,11 +1,11 @@
 
 Usage:
   proto-sim cut <x0> <t> [-smdrn]
-  proto-sim mod <x0> <m> [-smdrn]
+  proto-sim mod <x0> <m> [-smdrnt]
   proto-sim cmb <x0> <m> <t> [-smdrn]
-  proto-sim cut-stat <x0Max> <tMin> <tMax> -sr [-n]
-  proto-sim mod-stat <x0Max> <mMin> <mMax> -sr [-n]
-  proto-sim cmb-stat <x0Max> <mMin> <mMax> <tMin> <tMax> -sr [-n]
+  proto-sim cut-stat <x0Max> <tMin> <tMax> -srp [-n]
+  proto-sim mod-stat <x0Max> <mMin> <mMax> -srp [-n]
+  proto-sim cmb-stat <x0Max> <mMin> <mMax> <tMin> <tMax> -srp [-n]
   proto-sim -h
 
 Options:
@@ -13,5 +13,7 @@ Options:
   -m, --manual              Enables the manual sniper, not compatible with -d.
   -d=<dl>, --delay=<dl>     Prints the execution steps with delay <dl> [default: 0.0].
   -r=<sd>, --random=<sd>    Custom seed for random number generation.
+  -p=<fl>, --path=<fl>      Path of the output file.
   -n, --nocheck             Disable the check for convergence, necessary for larger inputs.
+  -t, --test                Special sniper to test edge case of modulo predicate.
   -h, --help                Show this screen.

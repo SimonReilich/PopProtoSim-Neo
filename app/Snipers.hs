@@ -39,6 +39,12 @@ manualSniper =
             return r
    in ((), snipe)
 
+specialSniper :: Int -> Sniper (Int, [Int], Int) ()
+specialSniper m =
+  let snipe config _ =
+        return ((), findIndex (\(_, (l, _, _)) -> l == 2 * (m `div` 3) || l == 4 * (m `div` 3)) config)
+  in ((), snipe)
+
 noSniper :: Sniper a ()
 noSniper =
   ((), \_ _ -> return ((), Nothing))
