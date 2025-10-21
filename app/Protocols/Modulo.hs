@@ -32,12 +32,12 @@ delta m (l1, s1, h1) (l2, s2, h2)
 
 stringify :: Int -> (Int, [Int], Int) -> Chunk
 stringify m (l, s, h) =
-  let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (fromIntegral (if h < 2 * m + 1 then h `mod` m else mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res) `mod` m) / fromIntegral m) 1.0 0.5
    in fore (colourRGB r g b) (chunk (pack ("(" ++ show l ++ ";" ++ Util.vec2String s ++ ";" ++ show h ++ ")")))
 
 output :: Int -> (Int, [Int], Int) -> (Int, Colour)
 output m (_, s, h) =
-  let (r, g, b) = Util.hsl2Rgb (fromIntegral (h `mod` m) / fromIntegral m) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (fromIntegral (if h < 2 * m + 1 then h `mod` m else mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res) `mod` m) / fromIntegral m) 1.0 0.5
    in if h < 2 * m + 1
         then (h `mod` m, colourRGB r g b)
         else (mostCommon (case Data.List.foldl (\(i, acc) a -> (i + 1, ((a + i) `mod` m) : acc)) (0, []) s of (_, res) -> res), colourRGB r g b)
