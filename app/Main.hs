@@ -101,7 +101,7 @@ main = do
     path <- getFilePath args
     writeFile path "Sn Mn Rt\n" >> mapM
       ( \(x0, m) -> do
-          (output, _, snipes) <- simulate (Protocols.Modulo.get m) [x0] (Sniper.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
+          (output, _, snipes) <- simulate (Protocols.Modulo.get m) [x0] (Sniper.specialSniper m) seed 0 (not (args `isPresent` longOption "nocheck")) False
           return (snipes, Protocols.Modulo.test m [x0] output)
       )
       (concatMap (\x0 -> map (x0,) [(read mMin) .. (read mMax)]) [2 .. read x0Max])

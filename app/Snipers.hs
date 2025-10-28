@@ -41,9 +41,13 @@ manualSniper =
 
 specialSniper :: Int -> Sniper (Int, [Int], Int) ()
 specialSniper m =
-  let snipe config _ =
-        return ((), findIndex (\(_, (l, _, _)) -> l == 2 * (m `div` 3) || l == 4 * (m `div` 3)) config)
+  let snipe config _ = case length $ filter (not . fst) config of
+        0 -> return ((), findIndex (\(_, (l, v, _)) -> l == 2 && v !! l == 4) config )
+        1 -> return ((), findIndex (\(_, (l, v, _)) -> l == 5 && v !! l == 3) config )
+        2 -> return ((), findIndex (\(_, (l, v, _)) -> l == 8 && v !! l == 2) config )
+        _ -> return ((), Nothing)
   in ((), snipe)
+
 
 noSniper :: Sniper a ()
 noSniper =

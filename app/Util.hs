@@ -26,9 +26,9 @@ replace i e (x : xs) =
     then e : xs
     else x : replace (i - 1) e xs
 
-mostCommon :: (Eq a) => [a] -> a
+mostCommon :: (Ord a) => [a] -> a
 mostCommon list =
-  head (Data.List.maximumBy (Data.Ord.comparing length) (Data.List.group list))
+  head (Data.List.maximumBy (Data.Ord.comparing length) (Data.List.group (Data.List.sort list)))
 
 hsl2Rgb :: Float -> Float -> Float -> (Word8, Word8, Word8)
 hsl2Rgb h s l =
