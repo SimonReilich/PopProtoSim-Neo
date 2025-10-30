@@ -15,7 +15,6 @@ import Protocols.Cut hiding (delta, input, output, stringify)
 import Protocols.Modulo hiding (delta, input, output, stringify)
 import Protocols.Tuple
 import Snipers
-import qualified Snipers as Sniper
 import System.Console.Docopt
 import System.Environment
 import System.Random
@@ -43,7 +42,7 @@ main = do
     let proto = Protocols.Cut.get (read t)
      in case getArgWithDefault args "" (longOption "sniper") of
           "" -> do
-            result <- simulate proto [read x0] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+            result <- simulate proto [read x0] (if args `isPresent` longOption "manual" then Snipers.manualSniper else Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Cut.test (read t))
           rt -> do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
@@ -57,7 +56,7 @@ main = do
     let proto = Protocols.Modulo.get (read m)
      in case getArgWithDefault args "" (longOption "sniper") of
           "" -> do
-            result <- simulate proto [read x0] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+            result <- simulate proto [read x0] (if args `isPresent` longOption "manual" then Snipers.manualSniper else Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Modulo.test (read m))
           rt -> do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
@@ -72,25 +71,27 @@ main = do
     let proto = Protocols.Combined.get (read m) (read t)
      in case getArgWithDefault args "" (longOption "sniper") of
           "" -> do
-            result <- simulate proto [read x0] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+            result <- simulate proto [read x0] (if args `isPresent` longOption "manual" then Snipers.manualSniper else Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Combined.test (read m) (read t))
           rt -> do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Combined.test (read m) (read t))
 
-  when (args `isPresent` command "custom-monadic") $ do
-    x0 <- args `getArgOrExit` argument "x0"
-    x1 <- args `getArgOrExit` argument "x1"
+  when (args `isPresent` command "mdc") $ do
     seed <- getSeed args
     delay <- getDelay args
-    let proto = Protocols.Tuple.get (Protocols.Combined.get 3 6) (Protocols.Combined.get 2 8) (0, 0) (0, 0)
-     in case getArgWithDefault args "" (longOption "sniper") of
+    let x = args `getAllArgs` argument "xi"
+     in let m = args `getAllArgs` argument "mi"
+      in let t = args `getAllArgs` argument "ti"
+       in let p : unary = Data.List.map (\(mi, ti) -> Protocols.Combined.get (read mi) (read ti)) (Data.List.zip m t)
+        in let proto = fst (Data.List.foldl (\(acc, n) -> \a -> (Protocols.Tuple.get a acc (0, 0) n, ((0, 0), n))) (p, (0, 0)) unary)
+         in case getArgWithDefault args "" (longOption "sniper") of
           "" -> do
-            result <- simulate proto [read x0, read x1] (if args `isPresent` longOption "manual" then Sniper.manualSniper else Sniper.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-            end result [read x0, read x1] (Protocols.Tuple.test (Protocols.Combined.test 0 0) (Protocols.Combined.test 0 0))
+            result <- simulate proto (map read x) (if args `isPresent` longOption "manual" then Snipers.manualSniper else Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+            endWithoutTest result (map read x)
           rt -> do
-            result <- simulate proto [read x0, read x1] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
-            end result [read x0, read x1] (Protocols.Tuple.test (Protocols.Combined.test 0 0) (Protocols.Combined.test 0 0))
+            result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
+            endWithoutTest result (map read x)
 
   when (args `isPresent` command "cut-stat") $ do
     x0Max <- args `getArgOrExit` argument "x0Max"
@@ -101,7 +102,7 @@ main = do
     path <- getFilePath args
     writeFile path "Sn Mn Rt\n" >> mapM
       ( \(x0, t) -> do
-          (output, _, snipes) <- simulate (Protocols.Cut.get t) [x0] (Sniper.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
+          (output, _, snipes) <- simulate (Protocols.Cut.get t) [x0] (Snipers.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
           return (snipes, Protocols.Cut.test t [x0] output)
       )
       (concatMap (\x0 -> map (x0,) [(read tMin) .. (read tMax)]) [2 .. read x0Max])
@@ -116,7 +117,7 @@ main = do
     path <- getFilePath args
     writeFile path "Sn Mn Rt\n" >> mapM
       ( \(x0, m) -> do
-          (output, _, snipes) <- simulate (Protocols.Modulo.get m) [x0] (Sniper.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
+          (output, _, snipes) <- simulate (Protocols.Modulo.get m) [x0] (Snipers.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
           return (snipes, Protocols.Modulo.test m [x0] output)
       )
       (concatMap (\x0 -> map (x0,) [(read mMin) .. (read mMax)]) [2 .. read x0Max])
@@ -133,7 +134,7 @@ main = do
     path <- getFilePath args
     writeFile path "Sn Mn Rt\n" >> mapM
       ( \(x0, m, t) -> do
-          (output, _, snipes) <- simulate (Protocols.Combined.get m t) [x0] (Sniper.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
+          (output, _, snipes) <- simulate (Protocols.Combined.get m t) [x0] (Snipers.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
           return (snipes, Protocols.Combined.test m t [x0] output)
       )
       (concatMap (\(x0, m) -> map (x0,m,) [(read tMin) .. (read tMax)]) (concatMap (\x0 -> map (x0,) [(read mMin) .. (read mMax)]) [2 .. read x0Max]))
@@ -261,6 +262,12 @@ end (output, colour, snipes) x test =
     >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), fore colour (chunk (pack (show output)))]
     >> putStrLn ("\nMinimum required snipes: " ++ show (test x output))
     >> putStrLn ("Actual amount of snipes: " ++ show snipes)
+
+endWithoutTest :: (Show b) => (b, Colour, Int) -> [Int] -> IO ()
+endWithoutTest (output, colour, snipes) x =
+  putStrLn ""
+    >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), fore colour (chunk (pack (show output)))]
+    >> putStrLn ("Amount of snipes: " ++ show snipes)
 
 formatDat :: FilePath -> [(Int, Int)] -> IO ()
 formatDat path [] =

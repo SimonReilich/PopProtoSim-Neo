@@ -3,7 +3,7 @@ Usage:
   proto-sim cut <x0> <t> [-smdrn]
   proto-sim mod <x0> <m> [-smdrn]
   proto-sim cmb <x0> <m> <t> [-smdrn]
-  proto-sim custom-monadic <x0> <x1> [-smdrn]
+  proto-sim mdc (<xi> <mi> <ti>)... [-smdrn]
   proto-sim cut-stat <x0Max> <tMin> <tMax> -srpn
   proto-sim mod-stat <x0Max> <mMin> <mMax> -srpn
   proto-sim cmb-stat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
@@ -14,6 +14,6 @@ Options:
   -m, --manual              Enables the manual sniper, not compatible with -d.
   -d=<dl>, --delay=<dl>     Prints the execution steps with delay <dl> [default: 0.0].
   -r=<sd>, --random=<sd>    Custom seed for random number generation.
-  -p=<fl>, --path=<fl>      Path of the output file.
+  -p=<fl>, --path=<fl>      Path of the output file [default: out.dat].
   -n, --nocheck             Disable the check for convergence, necessary for larger inputs.
   -h, --help                Show this screen.

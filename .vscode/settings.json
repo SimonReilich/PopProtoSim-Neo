@@ -3,5 +3,8 @@
         "Docopt",
         "Dups",
         "foldl"
-    ]
+    ],
+    "haskell.serverExecutablePath": "haskell-language-server",
+    "haskell.manageHLS": "PATH" 
+    // Setting manageHLS to "path" tells the extension to look for HLS in your PATH and not try to manage it via GHCup.
 }
