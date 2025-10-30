@@ -1,8 +1,9 @@
 
 Usage:
   proto-sim cut <x0> <t> [-smdrn]
-  proto-sim mod <x0> <m> [-smdrnt]
+  proto-sim mod <x0> <m> [-smdrn]
   proto-sim cmb <x0> <m> <t> [-smdrn]
+  proto-sim custom-monadic <x0> <x1> [-smdrn]
   proto-sim cut-stat <x0Max> <tMin> <tMax> -srpn
   proto-sim mod-stat <x0Max> <mMin> <mMax> -srpn
   proto-sim cmb-stat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
@@ -15,5 +16,4 @@ Options:
   -r=<sd>, --random=<sd>    Custom seed for random number generation.
   -p=<fl>, --path=<fl>      Path of the output file.
   -n, --nocheck             Disable the check for convergence, necessary for larger inputs.
-  -t, --test                Special sniper to test edge case of modulo predicate.
   -h, --help                Show this screen.

@@ -4,9 +4,19 @@ module Protocols where
 
 import Text.Colour
 
+type InputAssignment a = Int -> a
+
+type TransitionFunction a = a -> a -> (a, a)
+
+type ToChunkFunction a = a -> Chunk
+
+type OutputFunction a b = a -> (b, Colour)
+
+type TestFunction b = [Int] -> b -> Int
+
 type Configuration a = [(Bool, a)]
 
-type Protocol a b = (Eq b) => (Show b) => (Int -> a, a -> a -> (a, a), a -> Chunk, a -> (b, Colour), [Int] -> b -> Int)
+type Protocol a b = (Eq b) => (Show b) => (InputAssignment a, TransitionFunction a, ToChunkFunction a, OutputFunction a b, TestFunction b)
 
 deltaWrapper :: (a -> a -> (a, a)) -> ((Bool, a) -> (Bool, a) -> ((Bool, a), (Bool, a)))
 deltaWrapper d (b1, s1) (b2, s2) =
