@@ -1,3 +1,5 @@
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 module Snipers where
 
 import Data.List
@@ -5,14 +7,16 @@ import Protocols
 import System.IO
 import System.Random
 
-type Sniper a s = (s, Configuration a -> s -> IO (s, Maybe Int))
+data Sniper a s = Sniper s (Configuration a -> s -> IO (s, Maybe Int))
 
-randomSniper :: Int -> Float -> Sniper a StdGen
+randomSniper :: (Eq a, Show a) => Int -> Float -> Sniper a StdGen
 randomSniper seed chance =
-  let snipe config gen =
+  let 
+    snipe :: (Eq a, Show a) => Configuration a -> StdGen -> IO (StdGen, Maybe Int) 
+    snipe config g =
         if length (Data.List.filter fst config) >= 2
           then
-            let (res, genNew) = randomR (0.0, 1.0) gen
+            let (res, gn) = randomR (0.0, 1.0) g
              in if res < chance
                   then
                     let helper gen =
@@ -20,14 +24,16 @@ randomSniper seed chance =
                            in if (case config !! agent of (b, _) -> b)
                                 then return (genNew, Just agent)
                                 else helper genNew
-                     in helper genNew
-                  else return (genNew, Nothing)
-          else return (gen, Nothing)
-   in (mkStdGen seed, snipe)
+                     in helper gn
+                  else return (gn, Nothing)
+          else return (g, Nothing)
+   in Sniper (mkStdGen seed) snipe
 
-manualSniper :: Sniper a ()
+manualSniper :: (Eq a, Show a) => Sniper a ()
 manualSniper =
-  let snipe config _ =
+  let 
+    snipe :: (Eq a, Show a) => Configuration a -> () -> IO ((), Maybe Int) 
+    snipe config _ =
         if null config
           then return ((), Nothing)
           else do
@@ -37,8 +43,8 @@ manualSniper =
             let r = ((), if agent > 0 && agent <= length config then Just (agent - 1) else Nothing)
             putStrLn ""
             return r
-   in ((), snipe)
+   in Sniper () snipe
 
-noSniper :: Sniper a ()
+noSniper :: (Eq a, Show a) => Sniper a ()
 noSniper =
-  ((), \_ _ -> return ((), Nothing))
+  Sniper () (\_ _ -> return  ((), Nothing))

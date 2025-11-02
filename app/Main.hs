@@ -1,6 +1,8 @@
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 
 module Main where
 
@@ -8,18 +10,19 @@ import Control.Monad
 import Data.List
 import Data.List.Duplicate
 import Data.Maybe
-import Data.Text hiding (any, concat, concatMap, find, head, length, map, null, replace, replicate)
+import Data.Text hiding (any, concat, concatMap, find, head, length, map, null, replace, replicate, zipWith, show)
 import Protocols
-import Protocols.Combined hiding (output)
+import Protocols.Combined hiding (delta, output, stringify)
 import Protocols.Cut hiding (delta, input, output, stringify)
 import Protocols.Modulo hiding (delta, input, output, stringify)
-import Protocols.Tuple
+import Protocols.Tuple hiding (delta, input, output, stringify)
 import Snipers
 import System.Console.Docopt
 import System.Environment
 import System.Random
 import Text.Colour
 import Util
+import Data.Dynamic
 
 patterns :: Docopt
 patterns = [docoptFile|USAGE.txt|]
@@ -83,15 +86,15 @@ main = do
     let x = args `getAllArgs` argument "xi"
      in let m = args `getAllArgs` argument "mi"
       in let t = args `getAllArgs` argument "ti"
-       in let p : unary = Data.List.map (\(mi, ti) -> Protocols.Combined.get (read mi) (read ti)) (Data.List.zip m t)
-        in let proto = fst (Data.List.foldl (\(acc, n) -> \a -> (Protocols.Tuple.get a acc (0, 0) n, ((0, 0), n))) (p, (0, 0)) unary)
+       in let p1 : p2 : unary = zipWith (\ mi ti -> Protocols.Combined.get (read mi) (read ti)) m t
+        in let Just proto = fromDynamic (Data.List.foldl (\acc a -> toDyn (Protocols.Tuple.get (let Just p = (fromDynamic acc) in p) a)) (toDyn (Protocols.Tuple.get p1 p2)) unary)
          in case getArgWithDefault args "" (longOption "sniper") of
           "" -> do
             result <- simulate proto (map read x) (if args `isPresent` longOption "manual" then Snipers.manualSniper else Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-            endWithoutTest result (map read x)
+            endWithoutTest result
           rt -> do
             result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
-            endWithoutTest result (map read x)
+            endWithoutTest result
 
   when (args `isPresent` command "cut-stat") $ do
     x0Max <- args `getArgOrExit` argument "x0Max"
@@ -155,43 +158,43 @@ getDelay args =
 getFilePath :: Arguments -> IO String
 getFilePath args = getArgOrExit args (longOption "path")
 
-simulate :: (Eq a) => (Eq b) => (Show b) => (Ord b) => Protocol a b -> [Int] -> Sniper a s -> Int -> Int -> Bool -> Bool -> IO (b, Colour, Int)
-simulate (m, d, s, o, t) x sn seed delay doCheck doPrint =
-  let helper states sniper snipes gen =
-        if isStable doCheck states (m, d, s, o, t)
+simulate :: (Eq a, Show a, Eq b, Show b, Ord b) => Protocol a b -> [Int] -> Sniper a s -> Int -> Int -> Bool -> Bool -> IO (b, Colour, Int)
+simulate (Protocol m d s o t n) x sn seed delay doCheck doPrint =
+  let helper (Protocol m d s o t n) states sniper snipes gen =
+        if isStable doCheck states (Protocol m d s o t n)
           then
-            let Just (output, colour) = getOutput states (m, d, s, o, t)
+            let Just (output, colour) = getOutput states (Protocol m d s o t n)
              in return (output, colour, snipes)
           else do
-            (newStates, newSniper, snipeAmount, newGen) <- step states (m, d, s, o, t) sniper gen delay doCheck doPrint
-            helper newStates newSniper (snipes + snipeAmount) newGen
+            (newStates, newSniper, snipeAmount, newGen) <- step states (Protocol m d s o t n) sniper gen delay doCheck doPrint
+            helper (Protocol m d s o t n) newStates newSniper (snipes + snipeAmount) newGen
    in do
         when doPrint $ do
           putStrLn ""
-        helper (Protocols.getInitial (m, d, s, o, t) x) sn 0 (mkStdGen seed)
+        helper (Protocol m d s o t n) (Protocols.getInitial (Protocol m d s o t n) x) sn 0 (mkStdGen seed)
 
-step :: (Eq a) => (Eq b) => (Show b) => (Ord b) => Configuration a -> Protocol a b -> Sniper a s -> StdGen -> Int -> Bool -> Bool -> IO (Configuration a, Sniper a s, Int, StdGen)
-step states (mapping, delta, stringify, output, test) (sniperState, sniping) gen delay doCheck doPrint = do
-  let (a1, a2, newGen) = selectAgents states (mapping, delta, stringify, output, test) gen
+step :: (Eq a, Show a, Eq b, Show b, Ord b) => Configuration a -> Protocol a b -> Sniper a s -> StdGen -> Int -> Bool -> Bool -> IO (Configuration a, Sniper a s, Int, StdGen)
+step states (Protocol mapping delta stringify output test n) (Sniper sniperState sniping) gen delay doCheck doPrint = do
+  let (a1, a2, newGen) = selectAgents states (Protocol mapping delta stringify output test n) gen
    in let (q1, q2) = Protocols.deltaWrapper delta (states !! a1) (states !! a2)
        in let newStates = replace a1 q1 (replace a2 q2 states)
            in do
                 when doPrint $ do
                   printConfig states a1 a2 stringify delay
                   printConfig newStates (-1) (-1) stringify delay
-                if not (isStable doCheck newStates (mapping, delta, stringify, output, test))
+                if not (isStable doCheck newStates (Protocol mapping delta stringify output test n))
                   then do
                     (newSniperState, killed) <- sniping newStates sniperState
                     case killed of
                       Just i ->
                         if (case newStates !! i of (b, _) -> b)
-                          then return (replace i (False, let (_, s) = newStates !! i in s) newStates, (newSniperState, sniping), 1, newGen)
-                          else return (newStates, (newSniperState, sniping), 0, newGen)
-                      Nothing -> return (newStates, (newSniperState, sniping), 0, newGen)
-                  else return (newStates, (sniperState, sniping), 0, newGen)
+                          then return (replace i (False, let (_, s) = newStates !! i in s) newStates, (Sniper newSniperState sniping), 1, newGen)
+                          else return (newStates, (Sniper newSniperState sniping), 0, newGen)
+                      Nothing -> return (newStates, (Sniper newSniperState sniping), 0, newGen)
+                  else return (newStates, (Sniper sniperState sniping), 0, newGen)
 
-isStable :: (Eq a) => (Eq b) => (Show b) => (Ord b) => Bool -> Configuration a -> Protocol a b -> Bool
-isStable doCheck c (m, d, s, o, t) =
+isStable :: (Eq a, Show a, Eq b, Show b, Ord b) => Bool -> Configuration a -> Protocol a b -> Bool
+isStable doCheck c (Protocol m d s o t n) =
   let getAllConf states (mapping, delta, stringify, output) =
         case states of
           [] -> []
@@ -217,24 +220,24 @@ isStable doCheck c (m, d, s, o, t) =
           helperNoCheck (first : states) delta =
             ( not
                 ( Data.List.any
-                    ( \s ->
-                        ( let (q1, q2) = delta first s
-                           in not ((q1 == first && q2 == s) || (q1 == s && q2 == first))
+                    ( \q ->
+                        ( let (q1, q2) = delta first q
+                           in not ((q1 == first && q2 == q) || (q1 == q && q2 == first))
                         )
                     )
                     states
                 )
                 && helperNoCheck states delta
             )
-       in case getOutput c (m, d, s, o, t) of
+       in case getOutput c (Protocol m d s o t n) of
             Just r ->
               if doCheck
-                then helperCheck [Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c] [] (case r of (res, colour) -> res)
+                then helperCheck [Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c] [] (case r of (res, _) -> res)
                 else helperNoCheck (Data.Maybe.mapMaybe (\(b, state) -> if b then Just state else Nothing) c) d
             Nothing -> False
 
-selectAgents :: (Eq a) => (Eq b) => (Show b) => Configuration a -> Protocol a b -> StdGen -> (Int, Int, StdGen)
-selectAgents states (_, delta, _, _, _) g =
+selectAgents :: (Eq a, Show a, Eq b, Show b) => Configuration a -> Protocol a b -> StdGen -> (Int, Int, StdGen)
+selectAgents states (Protocol _ delta _ _ _ _) g =
   let result gen =
         let (a1, newGen1) = randomR (0, length states - 1) gen
          in let (a2, newGen2) = randomR (0, length states - 1) newGen1
@@ -247,8 +250,8 @@ selectAgents states (_, delta, _, _, _) g =
                       else result newGen2
    in result g
 
-getOutput :: (Eq b) => (Show b) => (Ord b) => Configuration a -> Protocol a b -> Maybe (b, Colour)
-getOutput c (_, _, _, o, _) =
+getOutput :: (Eq a, Show a, Eq b, Show b, Ord b) => Configuration a -> Protocol a b -> Maybe (b, Colour)
+getOutput c (Protocol _ _ _ o _ _) =
   let outputs = Data.List.map head (Data.List.group (Data.Maybe.mapMaybe (\(b, s) -> if b then Just (o s) else Nothing) c))
    in case outputs of
         [(r, colour)] -> Just (r, colour)
@@ -257,14 +260,14 @@ getOutput c (_, _, _, o, _) =
           _   -> Nothing
 
 end :: (Show b) => (b, Colour, Int) -> [Int] -> ([Int] -> b -> Int) -> IO ()
-end (output, colour, snipes) x test =
+end (output, colour, snipes) x t =
   putStrLn ""
     >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), fore colour (chunk (pack (show output)))]
-    >> putStrLn ("\nMinimum required snipes: " ++ show (test x output))
+    >> putStrLn ("\nMinimum required snipes: " ++ show (t x output))
     >> putStrLn ("Actual amount of snipes: " ++ show snipes)
 
-endWithoutTest :: (Show b) => (b, Colour, Int) -> [Int] -> IO ()
-endWithoutTest (output, colour, snipes) x =
+endWithoutTest :: (Show b) => (b, Colour, Int) -> IO ()
+endWithoutTest (output, colour, snipes) =
   putStrLn ""
     >> putChunksUtf8With With24BitColours [chunk (pack "Output: "), fore colour (chunk (pack (show output)))]
     >> putStrLn ("Amount of snipes: " ++ show snipes)
@@ -272,7 +275,7 @@ endWithoutTest (output, colour, snipes) x =
 formatDat :: FilePath -> [(Int, Int)] -> IO ()
 formatDat path [] =
   appendFile path ""
-formatDat path ((snipes, min) : xs) =
+formatDat path ((snipes, mininal) : xs) =
   if snipes == 0
     then formatDat path xs
-    else appendFile path (show snipes ++ " " ++ show min ++ " " ++ show (fromIntegral min / fromIntegral snipes) ++ "\n") >> formatDat path xs
+    else appendFile path (show snipes ++ " " ++ show mininal ++ " " ++ show (fromIntegral mininal / fromIntegral snipes) ++ "\n") >> formatDat path xs

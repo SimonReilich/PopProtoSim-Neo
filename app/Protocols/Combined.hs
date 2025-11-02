@@ -5,7 +5,7 @@
 module Protocols.Combined where
 
 import Data.List
-import Data.Text hiding (head, length, replace)
+import Data.Text hiding (head, length, replace, show)
 import Protocols
 import Protocols.Modulo hiding (delta, output, stringify, test)
 import Text.Colour
@@ -52,4 +52,4 @@ test _ _ _ _ =
   0
 
 get :: Int -> Int -> Protocols.Protocol (Int, [Int], Int) (Int, Int)
-get m t = (Protocols.Modulo.input m, delta m (max t (2 * m + 2)), stringify m t, output m t, test m t)
+get m t = Protocol (Protocols.Modulo.input m) (delta m (max t (2 * m + 2))) (stringify m t) (output m t) (test m t) (0, 0)

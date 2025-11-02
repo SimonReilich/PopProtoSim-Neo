@@ -4,7 +4,7 @@
 
 module Protocols.Cut where
 
-import Data.Text hiding (head, length, replace)
+import Data.Text hiding (head, length, replace, show)
 import Protocols
 import Text.Colour
 import Util
@@ -37,4 +37,4 @@ test _ _ _ =
   0
 
 get :: Int -> Protocols.Protocol (Int, Int) Int
-get t = (input, delta t, stringify t, output t, test t)
+get t = Protocol (input) (delta t) (stringify t) (output t) (test t) 0

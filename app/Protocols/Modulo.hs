@@ -1,11 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RankNTypes #-}
 {-# OPTIONS_GHC -Wno-simplifiable-class-constraints #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 
 module Protocols.Modulo where
 
 import Data.List
-import Data.Text hiding (head, length, replace, replicate)
+import Data.Text hiding (head, length, replace, replicate, show)
 import Protocols
 import Text.Colour
 import Util
@@ -51,4 +52,4 @@ test _ _ _ =
   0
 
 get :: Int -> Protocols.Protocol (Int, [Int], Int) Int
-get m = (input m, delta m, stringify m, output m, test m)
+get m = Protocol (input m) (delta m) (stringify m) (output m) (test m) 0

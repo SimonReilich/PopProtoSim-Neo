@@ -73,7 +73,7 @@ executable proto-sim
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.19.2.0,
+    build-depends:    base ^>=4.20.2.0,
                       random,
                       list-duplicate,
                       containers,

@@ -1,22 +1,23 @@
+{-# LANGUAGE RankNTypes #-}
 module Util where
 
 import Control.Concurrent
 import Data.List
 import Data.Ord
-import Data.Text hiding (any, find, head, length, replace, replicate)
+import Data.Text hiding (any, find, head, length, replace, replicate, show)
 import Data.Word
 import Protocols
 import Text.Colour
 
-printConfig :: Configuration a -> Int -> Int -> (a -> Chunk) -> Int -> IO ()
-printConfig s s1 s2 stringify delay =
+printConfig :: (Eq a, Show a) => Configuration a -> Int -> Int -> (a -> Chunk) -> Int -> IO ()
+printConfig c s1 s2 stringify delay =
   threadDelay delay
     >> let helper [] _ _ = [chunk (pack "\n")]
            helper ((b, s) : states) a1 a2
              | not b = chunk (pack "  ") : italic (faint (stringify s)) : helper states (a1 - 1) (a2 - 1)
              | a1 == 0 || a2 == 0 = chunk (pack "  ") : back (colorRGB 255 255 255) (slowBlinking (bold (stringify s))) : helper states (a1 - 1) (a2 - 1)
              | otherwise = chunk (pack "  ") : stringify s : helper states (a1 - 1) (a2 - 1)
-        in putChunksUtf8With With24BitColours (helper s s1 s2)
+        in putChunksUtf8With With24BitColours (helper c s1 s2)
 
 replace :: Int -> a -> [a] -> [a]
 replace _ _ [] =
@@ -56,6 +57,6 @@ vec2String [] =
   "()"
 vec2String (x : xs) =
   let helper [] = ")"
-      helper (x : xs) =
-        "|" ++ show x ++ helper xs
+      helper (y : ys) =
+        "|" ++ show y ++ helper ys
    in "(" ++ show x ++ helper xs
