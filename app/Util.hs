@@ -1,4 +1,5 @@
 {-# LANGUAGE RankNTypes #-}
+
 module Util where
 
 import Control.Concurrent

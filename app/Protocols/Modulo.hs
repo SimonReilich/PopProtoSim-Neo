@@ -52,4 +52,4 @@ test _ _ _ =
   0
 
 get :: Int -> Protocols.Protocol (Int, [Int], Int) Int
-get m = Protocol (input m) (delta m) (stringify m) (output m) (test m) 0
+get m = Protocol (input m) (delta m) (stringify m) (output m) (test m) (\(x:_) -> x `mod` m)

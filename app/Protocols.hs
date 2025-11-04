@@ -17,9 +17,8 @@ type TestFunction b = (Eq b, Show b) => [Int] -> b -> Int
 
 type Configuration a = (Eq a, Show a) => [(Bool, a)]
 
-data Protocol a b = Protocol (InputAssignment a) (TransitionFunction a) (ToChunkFunction a) (OutputFunction a b) (TestFunction b) b 
+data Protocol a b = Protocol (InputAssignment a) (TransitionFunction a) (ToChunkFunction a) (OutputFunction a b) (TestFunction b) ([Int] -> b)
   deriving (Typeable)
-
 
 deltaWrapper :: (a -> a -> (a, a)) -> ((Bool, a) -> (Bool, a) -> ((Bool, a), (Bool, a)))
 deltaWrapper d (b1, s1) (b2, s2) =

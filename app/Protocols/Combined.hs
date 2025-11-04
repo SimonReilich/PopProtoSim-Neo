@@ -52,4 +52,4 @@ test _ _ _ _ =
   0
 
 get :: Int -> Int -> Protocols.Protocol (Int, [Int], Int) (Int, Int)
-get m t = Protocol (Protocols.Modulo.input m) (delta m (max t (2 * m + 2))) (stringify m t) (output m t) (test m t) (0, 0)
+get m t = Protocol (Protocols.Modulo.input m) (delta m (max t (2 * m + 2))) (stringify m t) (output m t) (test m t) (\(x:_) -> (x `mod` m, min (max x 0) t))
