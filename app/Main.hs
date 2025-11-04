@@ -88,7 +88,7 @@ main = do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Combined.test (read m) (read t))
 
-  when (args `isPresent` command "mdc" && args `getArgCount` argument "xi" <= 5) $ do 
+  when (args `isPresent` command "mdc" && args `getArgCount` argument "xi" <= 5 && args `getArgCount` argument "xi" >= 2) $ (do 
     seed <- getSeed args
     delay <- getDelay args
     let x = args `getAllArgs` argument "xi"
@@ -139,9 +139,9 @@ main = do
                               rt -> do
                                 result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
                                 end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.test (read (m !! 4)) (read (t !! 4)))))))
-                      _ -> putStrLn "A maximum of 5 protocols to combine is supported" >> return ()
+                      _ -> putStrLn "A maximum of 5 protocols to combine is supported" >> return ())
 
-  when (args `isPresent` command "cut-stat") $ do
+  when (args `isPresent` command "cutstat") $ do
     x0Max <- args `getArgOrExit` argument "x0Max"
     tMin <- args `getArgOrExit` argument "tMin"
     tMax <- args `getArgOrExit` argument "tMax"
@@ -157,7 +157,7 @@ main = do
         (concatMap (\x0 -> map (x0,) [(read tMin) .. (read tMax)]) [2 .. read x0Max])
       >>= formatDat path
 
-  when (args `isPresent` command "mod-stat") $ do
+  when (args `isPresent` command "modstat") $ do
     x0Max <- args `getArgOrExit` argument "x0Max"
     mMin <- args `getArgOrExit` argument "mMin"
     mMax <- args `getArgOrExit` argument "mMax"
@@ -173,7 +173,7 @@ main = do
         (concatMap (\x0 -> map (x0,) [(read mMin) .. (read mMax)]) [2 .. read x0Max])
       >>= formatDat path
 
-  when (args `isPresent` command "cmb-stat") $ do
+  when (args `isPresent` command "cmbstat") $ do
     x0Max <- args `getArgOrExit` argument "x0Max"
     mMin <- args `getArgOrExit` argument "mMin"
     mMax <- args `getArgOrExit` argument "mMax"
@@ -189,6 +189,24 @@ main = do
             return (snipes, Protocols.Combined.test m t [x0] output)
         )
         (concatMap (\(x0, m) -> map (x0,m,) [(read tMin) .. (read tMax)]) (concatMap (\x0 -> map (x0,) [(read mMin) .. (read mMax)]) [2 .. read x0Max]))
+      >>= formatDat path
+
+  when (args `isPresent` command "mdcstat") $ do
+    xMax <- args `getArgOrExit` argument "x0Max"
+    mMin <- args `getArgOrExit` argument "mMin"
+    mMax <- args `getArgOrExit` argument "mMax"
+    tMin <- args `getArgOrExit` argument "tMin"
+    tMax <- args `getArgOrExit` argument "tMax"
+    rt <- args `getArgOrExit` longOption "sniper"
+    seed <- getSeed args
+    path <- getFilePath args
+    writeFile path "Sn Mn Rt\n"
+      >> mapM
+        ( \(x0, x1, x2, m, t) -> do
+            (output, _, snipes) <- simulate (Protocols.Tuple.get (Protocols.Combined.get m t) (Protocols.Tuple.get (Protocols.Combined.get m t) (Protocols.Combined.get m t))) [x0, x1, x2] (Snipers.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
+            return (snipes, Protocols.Tuple.test (Protocols.Combined.test m t) (Protocols.Tuple.test (Protocols.Combined.test m t) (Protocols.Combined.test m t)) [x0, x1, x2] output)
+        )
+        (concatMap (\(x0, x1, x2, m) -> map (x0, x1, x2, m, ) [(read tMin) .. (read tMax)]) (concatMap (\x0 -> (concatMap (\x1 -> (concatMap (\x2 -> map (x0, x1, x2, ) [(read mMin) .. (read mMax)]) [2 .. read xMax])) [2 .. read xMax])) [2 .. read xMax]))
       >>= formatDat path
 
 getSeed :: Arguments -> IO Int
