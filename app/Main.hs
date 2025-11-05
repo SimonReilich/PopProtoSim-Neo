@@ -10,7 +10,7 @@ import Control.Monad
 import Data.List
 import Data.List.Duplicate
 import Data.Maybe
-import Data.Text hiding (any, concat, concatMap, find, head, length, map, null, replace, replicate, show, zipWith)
+import Data.Text hiding (any, concat, concatMap, find, head, length, map, null, replace, replicate, show, zipWith, filter)
 import Protocols
 import Protocols.Combined hiding (delta, output, stringify)
 import Protocols.Cut hiding (delta, input, output, stringify)
@@ -88,7 +88,7 @@ main = do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Combined.test (read m) (read t))
 
-  when (args `isPresent` command "mdc" && args `getArgCount` argument "xi" <= 5 && args `getArgCount` argument "xi" >= 2) $ (do 
+  when (args `isPresent` command "p" && args `getArgCount` argument "xi" <= 5 && args `getArgCount` argument "xi" >= 2) $ (do 
     seed <- getSeed args
     delay <- getDelay args
     let x = args `getAllArgs` argument "xi"
@@ -191,7 +191,7 @@ main = do
         (concatMap (\(x0, m) -> map (x0,m,) [(read tMin) .. (read tMax)]) (concatMap (\x0 -> map (x0,) [(read mMin) .. (read mMax)]) [2 .. read x0Max]))
       >>= formatDat path
 
-  when (args `isPresent` command "mdcstat") $ do
+  when (args `isPresent` command "pstat") $ do
     xMax <- args `getArgOrExit` argument "x0Max"
     mMin <- args `getArgOrExit` argument "mMin"
     mMax <- args `getArgOrExit` argument "mMax"
@@ -202,11 +202,11 @@ main = do
     path <- getFilePath args
     writeFile path "Sn Mn Rt\n"
       >> mapM
-        ( \(x0, x1, x2, m, t) -> do
-            (output, _, snipes) <- simulate (Protocols.Tuple.get (Protocols.Combined.get m t) (Protocols.Tuple.get (Protocols.Combined.get m t) (Protocols.Combined.get m t))) [x0, x1, x2] (Snipers.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
-            return (snipes, Protocols.Tuple.test (Protocols.Combined.test m t) (Protocols.Tuple.test (Protocols.Combined.test m t) (Protocols.Combined.test m t)) [x0, x1, x2] output)
+        ( \((x0, x1, x2), (m0, m1, m2), (t0, t1, t2)) -> do
+            (output, _, snipes) <- simulate (Protocols.Tuple.get (Protocols.Combined.get m0 t0) (Protocols.Tuple.get (Protocols.Combined.get m1 t1) (Protocols.Combined.get m2 t2))) [x0, x1, x2] (Snipers.randomSniper seed (read rt)) seed 0 (not (args `isPresent` longOption "nocheck")) False
+            return (snipes, Protocols.Tuple.test (Protocols.Combined.test m0 t0) (Protocols.Tuple.test (Protocols.Combined.test m1 t1) (Protocols.Combined.test m2 t2)) [x0, x1, x2] output)
         )
-        (concatMap (\(x0, x1, x2, m) -> map (x0, x1, x2, m, ) [(read tMin) .. (read tMax)]) (concatMap (\x0 -> (concatMap (\x1 -> (concatMap (\x2 -> map (x0, x1, x2, ) [(read mMin) .. (read mMax)]) [2 .. read xMax])) [2 .. read xMax])) [2 .. read xMax]))
+        (cartProd3 (filter (\(x0, x1, x2) -> x0 <= x1 && x1 <= x2) (cartProd3self [1 .. read xMax])) (filter (\(m0, m1, m2) -> m0 < m1 && m1 < m2) (cartProd3self [read mMin .. read mMax])) (filter (\(t0, t1, t2) -> t0 < t1 && t1 < t2) (cartProd3self [read tMin .. read tMax])))
       >>= formatDat path
 
 getSeed :: Arguments -> IO Int

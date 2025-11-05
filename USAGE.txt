@@ -3,11 +3,11 @@ Usage:
   proto-sim cut [-smdrn] <x0> <t>
   proto-sim mod [-smdrn] <x0> <m>
   proto-sim cmb [-smdrn] <x0> <m> <t>
-  proto-sim mdc [-smdrn] (<xi> <mi> <ti>)...
+  proto-sim p [-smdrn] (<xi> <mi> <ti>)...
   proto-sim cutstat <x0Max> <tMin> <tMax> -srpn
   proto-sim modstat <x0Max> <mMin> <mMax> -srpn
   proto-sim cmbstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
-  proto-sim mdcstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
+  proto-sim pstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
   proto-sim -h
 
 Options:

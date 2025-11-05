@@ -61,3 +61,13 @@ vec2String (x : xs) =
       helper (y : ys) =
         "|" ++ show y ++ helper ys
    in "(" ++ show x ++ helper xs
+
+cartProd :: [a] -> [b] -> [(a, b)]
+cartProd xs ys = [(x,y) | x <- xs, y <- ys]
+
+
+cartProd3 :: [a] -> [b] -> [c] -> [(a, b, c)]
+cartProd3 xs ys zs = [(x,y,z) | x <- xs, y <- ys, z <- zs]
+
+cartProd3self :: [a] -> [(a, a, a)]
+cartProd3self xs = cartProd3 xs xs xs
