@@ -19,14 +19,14 @@ delta m (l1, s1, h1) (l2, s2, h2)
   | l1 == l2 =
       if l1 <= m ^ 2
         then
-          let newSave s = Util.replace l1 ((s1 !! l1 + s2 !! l1) `mod` m) (Util.replace (l1 + 1) 1 s)
-           in ((l1, newSave s1, max (max h1 h2) (l1 + 2)), (l1 + 1, newSave s2, max (max h1 h2) (l1 + 2)))
+          let newSave = Util.replace l1 ((s1 !! l1 + s2 !! l1) `mod` m) (Util.replace (l1 + 1) 1 (agree s1 s2))
+           in ((l1, newSave, max (max h1 h2) (l1 + 2)), (l1 + 1, newSave, max (max h1 h2) (l1 + 2)))
         else ((l1, s1, max h1 h2), (l2, s2, max h1 h2))
   | l1 <= m ^ 2 =
       if l2 <= m ^ 2
         then
-          let newSave s = Util.replace l1 (s1 !! l1) (Util.replace l2 (s2 !! l2) s)
-           in ((l1, newSave s1, max h1 h2), (l2, newSave s2, max h1 h2))
+          let newSave = Util.replace l1 (s1 !! l1) (Util.replace l2 (s2 !! l2) (agree s1 s2))
+           in ((l1, newSave, max h1 h2), (l2, newSave, max h1 h2))
         else ((l1, s1, max h1 h2), (l2, Util.replace l1 (s1 !! l1) s2, max h1 h2))
   | l2 <= m ^ 2 = ((l1, Util.replace l2 (s2 !! l2) s1, max h1 h2), (l2, s2, max h1 h2))
   | otherwise = ((l1, s1, max h1 h2), (l2, s2, max h1 h2))
@@ -50,6 +50,16 @@ test m [x0] result =
     else 1 + test m [x0 - 1] result
 test _ _ _ =
   0
+
+agree :: [Int] -> [Int] -> [Int]
+agree [] _ =
+  []
+agree _ [] =
+  []
+agree (v : vs) (u : us) =
+  if v == u
+    then v : (agree vs us)
+    else 0 : (agree vs us)
 
 get :: Int -> Protocols.Protocol (Int, [Int], Int) Int
 get m = Protocol (input m) (delta m) (stringify m) (output m) (test m) (\(x:_) -> x `mod` m)
