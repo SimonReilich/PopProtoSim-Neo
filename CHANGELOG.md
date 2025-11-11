@@ -1,5 +1,5 @@
 # Revision history for proto-sim
 
-## 0.1.0.0 -- YYYY-mm-dd
+## v1.0.0 -- 2025-11-11
 
-* First version. Released on an unsuspecting world.
+* Initial release, Linux only
