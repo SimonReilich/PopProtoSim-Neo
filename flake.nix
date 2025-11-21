@@ -1,31 +1,34 @@
+# file: flake.nix
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
     haskell-flake.url = "github:srid/haskell-flake";
   };
-  outputs =
-    inputs@{
-      self,
-      nixpkgs,
-      flake-parts,
-      ...
-    }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
-      systems = nixpkgs.lib.systems.flakeExposed;
-      imports = [ inputs.haskell-flake.flakeModule ];
 
-      perSystem =
-        { self', pkgs, ... }:
-        {
-          # Typically, you just want a single project named "default". But
-          # multiple projects are also possible, each using different GHC version.
-          haskellProjects.default = {
-            basePackages = pkgs.haskellPackages;
+  outputs = inputs:
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" ];
+      imports = [
+        inputs.haskell-flake.flakeModule
+      ];
+      perSystem = { self', system, lib, config, pkgs, ... }: {
+        haskellProjects.default = {
+          # basePackages = pkgs.haskellPackages;
+
+          # Packages to add on top of `basePackages`, e.g. from Hackage
+          packages = {
+            random.source = "1.3.1";
+            list-duplicate.source = "0.1.0.0";
+            containers.source = "0.8";
+            split.source = "0.2.5";
+            docopt.source = "0.7.0.8";
+            text.source = "2.1.3";
+            safe-coloured-text.source = "0.3.0.2";
           };
 
-          # haskell-flake doesn't set the default package, but you can do it here.
-          packages.default = self'.packages.proto-sim;
+          # What should haskell-flake add to flake outputs?
+          autoWire = [ "packages" "apps" "checks" ]; # Wire all but the devShell
         };
+      };
     };
 }
