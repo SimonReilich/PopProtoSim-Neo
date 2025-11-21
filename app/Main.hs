@@ -24,7 +24,29 @@ import Text.Colour
 import Util
 
 patterns :: Docopt
-patterns = [docoptFile|USAGE.txt|]
+patterns = [docopt|
+proto-sim version 0.1.0.0
+
+Usage:
+  proto-sim cut [-smdrn] <x0> <t>
+  proto-sim mod [-smdrn] <x0> <m>
+  proto-sim cmb [-smdrn] <x0> <m> <t>
+  proto-sim p [-smdrn] (<xi> <mi> <ti>)...
+  proto-sim cutstat <x0Max> <tMin> <tMax> -srpn
+  proto-sim modstat <x0Max> <mMin> <mMax> -srpn
+  proto-sim cmbstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
+  proto-sim pstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn
+  proto-sim -h
+
+Options:
+  -s=<rt>, --sniper=<rt>    Enables the sniper with rate <rt>.
+  -m, --manual              Enables the manual sniper, not compatible with -d.
+  -d=<dl>, --delay=<dl>     Prints the execution steps with delay <dl> [default: 0.0].
+  -r=<sd>, --random=<sd>    Custom seed for random number generation.
+  -p=<fl>, --path=<fl>      Path of the output file [default: out.dat].
+  -n, --nocheck             Disable the check for convergence, necessary for larger inputs.
+  -h, --help                Show this screen.
+|]
 
 getArgOrExit :: Arguments -> Option -> IO String
 getArgOrExit = getArgOrExitWith patterns
