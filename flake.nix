@@ -1,8 +1,16 @@
-# file: flake.nix
 {
   inputs = {
-    flake-parts.url = "github:hercules-ci/flake-parts";
-    haskell-flake.url = "github:srid/haskell-flake";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    flake-parts = {
+      url = "github:hercules-ci/flake-parts";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    haskell-flake = {
+      url = "github:srid/haskell-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs = inputs:
@@ -13,7 +21,7 @@
       ];
       perSystem = { self', system, lib, config, pkgs, ... }: {
         haskellProjects.default = {
-          # basePackages = pkgs.haskellPackages;
+          basePackages = pkgs.haskellPackages;
 
           # Packages to add on top of `basePackages`, e.g. from Hackage
           packages = {
@@ -26,8 +34,7 @@
             safe-coloured-text.source = "0.3.0.2";
           };
 
-          # What should haskell-flake add to flake outputs?
-          autoWire = [ "packages" "apps" "checks" ]; # Wire all but the devShell
+          autoWire = [ "packages" "apps" "checks" ];
         };
       };
     };
