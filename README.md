@@ -62,4 +62,4 @@ If you add this flake to your nix-inputs
     ...
 }
 ```
-you can install the tool by adding `inputs.popprotosim-neo.packages.x86_64-linux.proto-sim` to your `environment.systemPackages` (Nix) / `home.packages` (Home-Manager).
+you can install the tool by adding `inputs.popprotosim-neo.packages.x86_64-linux.default` to your `environment.systemPackages` (Nix) / `home.packages` (Home-Manager).
