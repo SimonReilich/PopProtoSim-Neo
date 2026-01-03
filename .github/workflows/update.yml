@@ -1,3 +1,5 @@
+name: 'nix flake update'
+
 on:
   workflow_dispatch: # allows manual triggering
   schedule:
