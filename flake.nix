@@ -92,12 +92,6 @@
               QuickCheck
             ]
           );
-
-          hie-bios-deps = pkgs.writeShellScriptBin "hie-bios-deps" ''
-            echo "-i."
-            echo "-XOverloadedStrings" # Example of adding default extensions
-            # Add any other GHC flags your project needs
-          '';
         in
         pkgs.mkShell {
           packages = [
@@ -108,6 +102,7 @@
           ];
           shellHook = ''
             echo -e "\nloaded haskell environment with Glasgow Haskell Compiler ${testEnv.version}\n"
+            rm hie.yaml
             printf "cradle:\n  direct:\n    arguments:\n      - \"-iapp\"\n      - \"Main.hs\"" >> hie.yaml
           '';
         };
