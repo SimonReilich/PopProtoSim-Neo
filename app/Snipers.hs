@@ -3,11 +3,11 @@
 
 module Snipers where
 
+import Control.Monad
 import Data.List
 import Protocols
 import System.IO
 import System.Random
-import Control.Monad
 
 data Sniper a s = Sniper s (Configuration a -> s -> IO (s, Maybe Int))
 
@@ -37,16 +37,22 @@ manualSniper =
         if null config
           then return (b, Nothing)
           else do
-            if b then (do
-              putStr "\nAgent to be sniped: "
-              hFlush stdout
-              (do putStrLn ""
-                  agent <- readLn :: IO Int
-                  if agent > 0 && agent <= length config 
-                    then return (True, Just (agent - 1)) 
-                    else if agent == -1
-                      then return (False, Nothing)
-                      else return (True, Nothing)))
+            if b
+              then
+                ( do
+                    putStr "\nAgent to be sniped: "
+                    hFlush stdout
+                    ( do
+                        putStrLn ""
+                        agent <- readLn :: IO Int
+                        if agent > 0 && agent <= length config
+                          then return (True, Just (agent - 1))
+                          else
+                            if agent == -1
+                              then return (False, Nothing)
+                              else return (True, Nothing)
+                      )
+                )
               else return (False, Nothing)
    in Sniper True snipe
 

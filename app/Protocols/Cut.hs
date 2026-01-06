@@ -37,4 +37,4 @@ test _ _ _ =
   0
 
 get :: Int -> Protocols.Protocol (Int, Int) Int
-get t = Protocol (input) (delta t) (stringify t) (output t) (test t) (\(x:_) -> min (max x 0) t)
+get t = Protocol (input) (delta t) (stringify t) (output t) (test t) (\(x : _) -> min (max x 0) t)

@@ -2,8 +2,8 @@
 
 module Protocols where
 
-import Text.Colour
 import Data.Data (Typeable)
+import Text.Colour
 
 type InputAssignment a = (Eq a, Show a) => Int -> a
 

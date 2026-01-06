@@ -10,7 +10,7 @@ import Control.Monad
 import Data.List
 import Data.List.Duplicate
 import Data.Maybe
-import Data.Text hiding (any, concat, concatMap, find, head, length, map, null, replace, replicate, show, zipWith, filter)
+import Data.Text hiding (any, concat, concatMap, filter, find, head, length, map, null, replace, replicate, show, zipWith)
 import Protocols
 import Protocols.Combined hiding (delta, output, stringify)
 import Protocols.Cut hiding (delta, input, output, stringify)
@@ -24,7 +24,8 @@ import Text.Colour
 import Util
 
 patterns :: Docopt
-patterns = [docopt|
+patterns =
+  [docopt|
 proto-sim version 0.1.0.0
 
 Usage:
@@ -65,12 +66,14 @@ main = do
     delay <- getDelay args
     let proto = Protocols.Cut.get (read t)
      in case getArgWithDefault args "" (longOption "sniper") of
-          "" -> if args `isPresent` longOption "manual" then do
-              result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-              end result [read x0] (Protocols.Cut.test (read t))
-            else do
-              result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-              end result [read x0] (Protocols.Cut.test (read t))
+          "" ->
+            if args `isPresent` longOption "manual"
+              then do
+                result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Cut.test (read t))
+              else do
+                result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Cut.test (read t))
           rt -> do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Cut.test (read t))
@@ -82,12 +85,14 @@ main = do
     delay <- getDelay args
     let proto = Protocols.Modulo.get (read m)
      in case getArgWithDefault args "" (longOption "sniper") of
-          "" -> if args `isPresent` longOption "manual" then do
-              result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-              end result [read x0] (Protocols.Modulo.test (read m))
-            else do
-              result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-              end result [read x0] (Protocols.Modulo.test (read m))
+          "" ->
+            if args `isPresent` longOption "manual"
+              then do
+                result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Modulo.test (read m))
+              else do
+                result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Modulo.test (read m))
           rt -> do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Modulo.test (read m))
@@ -100,68 +105,84 @@ main = do
     delay <- getDelay args
     let proto = Protocols.Combined.get (read m) (read t)
      in case getArgWithDefault args "" (longOption "sniper") of
-          "" -> if args `isPresent` longOption "manual" then do
-              result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-              end result [read x0] (Protocols.Combined.test (read m) (read t))
-            else do 
-              result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-              end result [read x0] (Protocols.Combined.test (read m) (read t))
+          "" ->
+            if args `isPresent` longOption "manual"
+              then do
+                result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Combined.test (read m) (read t))
+              else do
+                result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Combined.test (read m) (read t))
           rt -> do
             result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
             end result [read x0] (Protocols.Combined.test (read m) (read t))
 
-  when (args `isPresent` command "p" && args `getArgCount` argument "xi" <= 5 && args `getArgCount` argument "xi" >= 2) $ (do 
-    seed <- getSeed args
-    delay <- getDelay args
-    let x = args `getAllArgs` argument "xi"
-     in let m = args `getAllArgs` argument "mi"
-         in let t = args `getAllArgs` argument "ti"
-                in case args `getArgCount` argument "xi" of
-                      2 -> let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.get (read (m !! 1)) (read (t !! 1)))
-                        in case getArgWithDefault args "" (longOption "sniper") of
-                              "" -> if args `isPresent` longOption "manual" then do
-                                  result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))))
-                                else do
-                                  result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))))
+  when (args `isPresent` command "p" && args `getArgCount` argument "xi" <= 5 && args `getArgCount` argument "xi" >= 2) $
+    ( do
+        seed <- getSeed args
+        delay <- getDelay args
+        let x = args `getAllArgs` argument "xi"
+         in let m = args `getAllArgs` argument "mi"
+             in let t = args `getAllArgs` argument "ti"
+                 in case args `getArgCount` argument "xi" of
+                      2 ->
+                        let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.get (read (m !! 1)) (read (t !! 1)))
+                         in case getArgWithDefault args "" (longOption "sniper") of
+                              "" ->
+                                if args `isPresent` longOption "manual"
+                                  then do
+                                    result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))))
+                                  else do
+                                    result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))))
                               rt -> do
                                 result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
                                 end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))))
-                      3 -> let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.get (read (m !! 2)) (read (t !! 2))))
-                        in case getArgWithDefault args "" (longOption "sniper") of
-                              "" -> if args `isPresent` longOption "manual" then do
-                                  result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.test (read (m !! 2)) (read (t !! 2)))))
-                                else do
-                                  result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.test (read (m !! 2)) (read (t !! 2)))))
+                      3 ->
+                        let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.get (read (m !! 2)) (read (t !! 2))))
+                         in case getArgWithDefault args "" (longOption "sniper") of
+                              "" ->
+                                if args `isPresent` longOption "manual"
+                                  then do
+                                    result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.test (read (m !! 2)) (read (t !! 2)))))
+                                  else do
+                                    result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.test (read (m !! 2)) (read (t !! 2)))))
                               rt -> do
                                 result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
                                 end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Combined.test (read (m !! 2)) (read (t !! 2)))))
-                      4 -> let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.get (read (m !! 3)) (read (t !! 3)))))
-                        in case getArgWithDefault args "" (longOption "sniper") of
-                              "" -> if args `isPresent` longOption "manual" then do
-                                  result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))))))
-                                else do 
-                                  result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))))))
+                      4 ->
+                        let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.get (read (m !! 3)) (read (t !! 3)))))
+                         in case getArgWithDefault args "" (longOption "sniper") of
+                              "" ->
+                                if args `isPresent` longOption "manual"
+                                  then do
+                                    result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))))))
+                                  else do
+                                    result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))))))
                               rt -> do
                                 result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
                                 end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))))))
-                      5 -> let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.get (read (m !! 4)) (read (t !! 4))))))
-                        in case getArgWithDefault args "" (longOption "sniper") of
-                              "" -> if args `isPresent` longOption "manual" then do
-                                  result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.test (read (m !! 4)) (read (t !! 4)))))))
-                                else do
-                                  result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
-                                  end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.test (read (m !! 4)) (read (t !! 4)))))))
+                      5 ->
+                        let proto = Protocols.Tuple.get (Protocols.Combined.get (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.get (Protocols.Combined.get (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.get (read (m !! 4)) (read (t !! 4))))))
+                         in case getArgWithDefault args "" (longOption "sniper") of
+                              "" ->
+                                if args `isPresent` longOption "manual"
+                                  then do
+                                    result <- simulate proto (map read x) (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.test (read (m !! 4)) (read (t !! 4)))))))
+                                  else do
+                                    result <- simulate proto (map read x) (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                                    end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.test (read (m !! 4)) (read (t !! 4)))))))
                               rt -> do
                                 result <- simulate proto (map read x) (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
                                 end result (map read x) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 0)) (read (t !! 0))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 1)) (read (t !! 1))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 2)) (read (t !! 2))) (Protocols.Tuple.test (Protocols.Combined.test (read (m !! 3)) (read (t !! 3))) (Protocols.Combined.test (read (m !! 4)) (read (t !! 4)))))))
-                      _ -> putStrLn "A maximum of 5 protocols to combine is supported" >> return ())
+                      _ -> putStrLn "A maximum of 5 protocols to combine is supported" >> return ()
+    )
 
   when (args `isPresent` command "cutstat") $ do
     x0Max <- args `getArgOrExit` argument "x0Max"

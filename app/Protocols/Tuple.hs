@@ -54,8 +54,8 @@ output _ o2 (Right (q, s)) =
    in ((s, o), colour)
 
 test :: (Eq b, Show b, Eq d, Show d) => TestFunction b -> TestFunction d -> [Int] -> (b, d) -> Int
-test t1 t2 (x:xs) (r1, r2) =
-    (t1 [x] r1) + (t2 xs r2)
+test t1 t2 (x : xs) (r1, r2) =
+  (t1 [x] r1) + (t2 xs r2)
 
 get :: (Eq a, Show a, Eq b, Show b, Eq c, Show c, Eq d, Show d) => Protocols.Protocol a b -> Protocols.Protocol c d -> Protocols.Protocol (Either (a, d) (c, b)) (b, d)
 get (Protocol i1 d1 s1 o1 t1 f1) (Protocol i2 d2 s2 o2 t2 f2) = Protocol (input i1 i2 (f1 [0, 0, 0, 0, 0]) (f2 [0, 0, 0, 0, 0])) (delta d1 d2 (f1 [0, 0, 0, 0, 0]) (f2 [0, 0, 0, 0, 0]) o1 o2) (stringify s1 s2) (output o1 o2) (test t1 t2) (\xs -> (f1 [head xs], f2 (tail xs)))

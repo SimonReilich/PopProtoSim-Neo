@@ -62,4 +62,4 @@ agree (v : vs) (u : us) =
     else 0 : (agree vs us)
 
 get :: Int -> Protocols.Protocol (Int, [Int], Int) Int
-get m = Protocol (input m) (delta m) (stringify m) (output m) (test m) (\(x:_) -> x `mod` m)
+get m = Protocol (input m) (delta m) (stringify m) (output m) (test m) (\(x : _) -> x `mod` m)
