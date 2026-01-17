@@ -23,6 +23,8 @@ import System.Random
 import Text.Colour
 import Util
 
+import System.IO (hSetBuffering, stdout, BufferMode(LineBuffering))
+
 patterns :: Docopt
 patterns =
   [docopt|
@@ -54,10 +56,33 @@ getArgOrExit = getArgOrExitWith patterns
 
 main :: IO ()
 main = do
+  hSetBuffering stdout LineBuffering
+
   args <- parseArgsOrExit patterns =<< getArgs
 
   when (args `isPresent` longOption "help") $ do
-    readFile "USAGE.txt" >>= putStrLn
+    putStrLn "\n\
+      \proto-sim version 0.1.0.0\n\n\
+
+      \Usage:\n\
+      \  proto-sim cut [-smdrn] <x0> <t>\n\
+      \  proto-sim mod [-smdrn] <x0> <m>\n\
+      \  proto-sim cmb [-smdrn] <x0> <m> <t>\n\
+      \  proto-sim p [-smdrn] (<xi> <mi> <ti>)...\n\
+      \  proto-sim cutstat <x0Max> <tMin> <tMax> -srpn\n\
+      \  proto-sim modstat <x0Max> <mMin> <mMax> -srpn\n\
+      \  proto-sim cmbstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn\n\
+      \  proto-sim pstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn\n\
+      \  proto-sim -h\n\n\
+
+      \Options:\n\
+      \  -s=<rt>, --sniper=<rt>    Enables the sniper with rate <rt>.\n\
+      \  -m, --manual              Enables the manual sniper, not compatible with -d.\n\
+      \  -d=<dl>, --delay=<dl>     Prints the execution steps with delay <dl> [default: 0.0].\n\
+      \  -r=<sd>, --random=<sd>    Custom seed for random number generation.\n\
+      \  -p=<fl>, --path=<fl>      Path of the output file [default: out.dat].\n\
+      \  -n, --nocheck             Disable the check for convergence, necessary for larger inputs.\n\
+      \  -h, --help                Show this screen."
 
   when (args `isPresent` command "cut") $ do
     x0 <- args `getArgOrExit` argument "x0"
