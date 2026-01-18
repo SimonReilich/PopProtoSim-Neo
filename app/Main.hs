@@ -15,15 +15,15 @@ import Protocols
 import Protocols.Combined hiding (delta, output, stringify)
 import Protocols.Cut hiding (delta, input, output, stringify)
 import Protocols.Modulo hiding (delta, input, output, stringify)
+import Protocols.Pebbles hiding (delta, input, output, stringify)
 import Protocols.Tuple hiding (delta, input, output, stringify)
 import Snipers
 import System.Console.Docopt
 import System.Environment
+import System.IO (BufferMode (LineBuffering), hSetBuffering, stdout)
 import System.Random
 import Text.Colour
 import Util
-
-import System.IO (hSetBuffering, stdout, BufferMode(LineBuffering))
 
 patterns :: Docopt
 patterns =
@@ -31,6 +31,7 @@ patterns =
 proto-sim version 0.1.0.0
 
 Usage:
+  proto-sim pbl [-smdrn] <x0> <t>
   proto-sim cut [-smdrn] <x0> <t>
   proto-sim mod [-smdrn] <x0> <m>
   proto-sim cmb [-smdrn] <x0> <m> <t>
@@ -61,9 +62,9 @@ main = do
   args <- parseArgsOrExit patterns =<< getArgs
 
   when (args `isPresent` longOption "help") $ do
-    putStrLn "\n\
+    putStrLn
+      "\n\
       \proto-sim version 0.1.0.0\n\n\
-
       \Usage:\n\
       \  proto-sim cut [-smdrn] <x0> <t>\n\
       \  proto-sim mod [-smdrn] <x0> <m>\n\
@@ -74,7 +75,6 @@ main = do
       \  proto-sim cmbstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn\n\
       \  proto-sim pstat <x0Max> <mMin> <mMax> <tMin> <tMax> -srpn\n\
       \  proto-sim -h\n\n\
-
       \Options:\n\
       \  -s=<rt>, --sniper=<rt>    Enables the sniper with rate <rt>.\n\
       \  -m, --manual              Enables the manual sniper, not compatible with -d.\n\
@@ -83,6 +83,25 @@ main = do
       \  -p=<fl>, --path=<fl>      Path of the output file [default: out.dat].\n\
       \  -n, --nocheck             Disable the check for convergence, necessary for larger inputs.\n\
       \  -h, --help                Show this screen."
+
+  when (args `isPresent` command "pbl") $ do
+    x0 <- args `getArgOrExit` argument "x0"
+    t <- args `getArgOrExit` argument "t"
+    seed <- getSeed args
+    delay <- getDelay args
+    let proto = Protocols.Pebbles.get (read t)
+     in case getArgWithDefault args "" (longOption "sniper") of
+          "" ->
+            if args `isPresent` longOption "manual"
+              then do
+                result <- simulate proto [read x0] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Pebbles.test (read t))
+              else do
+                result <- simulate proto [read x0] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x0] (Protocols.Pebbles.test (read t))
+          rt -> do
+            result <- simulate proto [read x0] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
+            end result [read x0] (Protocols.Pebbles.test (read t))
 
   when (args `isPresent` command "cut") $ do
     x0 <- args `getArgOrExit` argument "x0"
