@@ -13,6 +13,10 @@ Population protocols are a model of distributed computation with very strict lim
 
 # Usage:
 ```
+proto-sim maj [-smdrn] <x> <y>
+
+proto-sim pbl [-smdrn] <x0> <t>
+
 proto-sim cut [-smdrn] <x0> <t>
 
 proto-sim mod [-smdrn] <x0> <m>
