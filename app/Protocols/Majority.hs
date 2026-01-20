@@ -73,16 +73,19 @@ output (N _) =
 
 test :: [Int] -> (Maybe Bool) -> Int
 test [x, y] (Just result) =
-  if (x >= y) == result
+  if ((x > y) && result) || ((x < y) && (not result))
     then 0
     else
       if result
         then 1 + test [x, y - 1] (Just result)
         else 1 + test [x - 1, y] (Just result)
 test [x, y] Nothing =
-  if x >= y
-    then x - y
-    else y - x
+  if x == y
+    then 0
+    else
+      if x >= y
+        then x - y
+        else y - x
 test _ _ =
   0
 
