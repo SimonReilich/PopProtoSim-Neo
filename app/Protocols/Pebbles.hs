@@ -20,12 +20,12 @@ delta t l1 l2 =
 
 stringify :: Int -> Int -> Chunk
 stringify t l =
-  let (r, g, b) = Util.hsl2Rgb (fromIntegral l / fromIntegral t) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (if l >= t then 0.3 else 0.0) 1.0 0.5
    in fore (colourRGB r g b) (chunk (pack (show l)))
 
 output :: Int -> Int -> (Bool, Colour)
 output t l =
-  let (r, g, b) = Util.hsl2Rgb (fromIntegral (min l t) / fromIntegral t) 1.0 0.5
+  let (r, g, b) = Util.hsl2Rgb (if l >= t then 0.3 else 0.0) 1.0 0.5
    in (l >= t, colourRGB r g b)
 
 test :: Int -> [Int] -> Bool -> Int

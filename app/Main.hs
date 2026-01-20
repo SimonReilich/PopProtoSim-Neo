@@ -14,6 +14,7 @@ import Data.Text hiding (any, concat, concatMap, filter, find, head, length, map
 import Protocols
 import Protocols.Combined hiding (delta, output, stringify)
 import Protocols.Cut hiding (delta, input, output, stringify)
+import Protocols.Majority hiding (active, delta, output, stringify)
 import Protocols.Modulo hiding (delta, input, output, stringify)
 import Protocols.Pebbles hiding (delta, input, output, stringify)
 import Protocols.Tuple hiding (delta, input, output, stringify)
@@ -31,6 +32,7 @@ patterns =
 proto-sim version 0.1.0.0
 
 Usage:
+  proto-sim maj [-smdrn] <x> <y>
   proto-sim pbl [-smdrn] <x0> <t>
   proto-sim cut [-smdrn] <x0> <t>
   proto-sim mod [-smdrn] <x0> <m>
@@ -66,6 +68,8 @@ main = do
       "\n\
       \proto-sim version 0.1.0.0\n\n\
       \Usage:\n\
+      \  proto-sim maj [-smdrn] <x> <y>\n\
+      \  proto-sim pbl [-smdrn] <x0> <t>\n\
       \  proto-sim cut [-smdrn] <x0> <t>\n\
       \  proto-sim mod [-smdrn] <x0> <m>\n\
       \  proto-sim cmb [-smdrn] <x0> <m> <t>\n\
@@ -83,6 +87,25 @@ main = do
       \  -p=<fl>, --path=<fl>      Path of the output file [default: out.dat].\n\
       \  -n, --nocheck             Disable the check for convergence, necessary for larger inputs.\n\
       \  -h, --help                Show this screen."
+
+  when (args `isPresent` command "maj") $ do
+    x <- args `getArgOrExit` argument "x"
+    y <- args `getArgOrExit` argument "y"
+    seed <- getSeed args
+    delay <- getDelay args
+    let proto = Protocols.Majority.get
+     in case getArgWithDefault args "" (longOption "sniper") of
+          "" ->
+            if args `isPresent` longOption "manual"
+              then do
+                result <- simulate proto [read x, read y] (Snipers.manualSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x, read y] (Protocols.Majority.test)
+              else do
+                result <- simulate proto [read x, read y] (Snipers.noSniper) seed delay (not (args `isPresent` longOption "nocheck")) True
+                end result [read x, read y] (Protocols.Majority.test)
+          rt -> do
+            result <- simulate proto [read x, read y] (Snipers.randomSniper seed (read rt)) seed delay (not (args `isPresent` longOption "nocheck")) True
+            end result [read x, read y] (Protocols.Majority.test)
 
   when (args `isPresent` command "pbl") $ do
     x0 <- args `getArgOrExit` argument "x0"
