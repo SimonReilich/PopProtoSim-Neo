@@ -19,7 +19,7 @@
           }) systems
         );
       name = "proto-sim";
-      version = "0.1.0.0";
+      version = "v1.2.0";
     in
     {
       packages = forAllSystems (
@@ -28,7 +28,6 @@
           pkgs = nixpkgs.legacyPackages.${system};
         in
         {
-          # 'nix build' will build this
           default = pkgs.stdenv.mkDerivation {
             pname = name;
             version = version;
@@ -57,12 +56,10 @@
       );
 
       checks = forAllSystems (system: {
-        # Check that the main package builds
         package = self.packages.${system}.default;
       });
 
       apps = forAllSystems (system: {
-        # 'nix run' will build this
         default = {
           type = "app";
           program = "${self.packages.${system}.default}/bin/${name}";
