@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE ImpredicativeTypes #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
@@ -56,6 +57,8 @@ Options:
 
 getArgOrExit :: Arguments -> Option -> IO String
 getArgOrExit = getArgOrExitWith patterns
+
+foreign export ccall "hs_proto_sim_main" main :: IO ()
 
 main :: IO ()
 main = do

@@ -26,30 +26,45 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          haskellEnv = pkgs.haskellPackages.ghcWithPackages (
+            p: with p; [
+              random
+              list-duplicate
+              containers_0_8
+              split
+              docopt
+              text
+              safe-coloured-text
+            ]
+          );
         in
         {
-          default = pkgs.stdenv.mkDerivation {
+          default = self.packages.${system}.proto-sim;
+
+          proto-sim = pkgs.stdenv.mkDerivation {
             pname = name;
             version = version;
             src = ./app;
 
-            buildInputs = with pkgs; [
-              (pkgs.haskellPackages.ghcWithPackages (
-                p: with p; [
-                  random
-                  list-duplicate
-                  containers_0_8
-                  split
-                  docopt
-                  text
-                  safe-coloured-text
-                ]
-              ))
-            ];
+            buildInputs = [ haskellEnv ];
 
             buildPhase = ''
               mkdir -p $out/bin
               ghc --make Main.hs -o $out/bin/${name}
+            '';
+          };
+
+          library = pkgs.stdenv.mkDerivation {
+            pname = "${name}-library";
+            version = version;
+            src = ./app;
+
+            buildInputs = [ haskellEnv ];
+
+            buildPhase = ''
+              mkdir -p $out/lib $out/include
+              ghc --make -dynamic -fPIC -shared Main.hs -o $out/lib/libprotosim.so
+              cp Main_stub.h $out/include/protosim.h
             '';
           };
         }
